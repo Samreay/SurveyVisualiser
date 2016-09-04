@@ -1,0 +1,1 @@
+ffmpeg -i output/%1/3d_%%d.png -c:v libx264 -pix_fmt yuv420p output/%1.mp4
