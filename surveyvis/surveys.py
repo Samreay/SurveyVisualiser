@@ -49,8 +49,8 @@ class TwoDegreeField(Survey):
         data = np.load("surveyvis/data/2df.npy")
         super().__init__(data[:, 0] * np.pi / 180, data[:, 1] * np.pi / 180, data[:, 2], zmax=0.3)
         self.color = "#941313"
-        self.alpha = 0.8
-        self.size = 1.1
+        self.alpha = 0.7
+        self.size = 1.0
 
 
 class Gama(Survey):

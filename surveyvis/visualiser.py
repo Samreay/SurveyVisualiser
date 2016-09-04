@@ -91,6 +91,40 @@ class Visualisation(object):
         fig.savefig(filename, dpi=192, bbox_inches=extent, pad_inches=0, transparent=True)
         print("Saved to %s" % filename)
 
+    def render_latex(self, *filenames, grid=True, grid_color="#333333", theta_color="#111111", outline=True, dpi=600):
+        def formatter(x, p):
+            return "$z=%.2f$" % x
+        rmax = max([s.zmax for s in self.surveys])
+        fig = plt.figure(figsize=(8, 8), dpi=dpi, facecolor=self.plot_background_color, frameon=False)
+        ax = fig.add_subplot(111, projection='polar', axisbg=self.axis_background_color)
+        ax.clear()
+        ax.set_rlim(0, rmax)
+        ax.yaxis.set_major_locator(MaxNLocator(4, prune="lower"))
+
+        ax.grid(grid)
+        ax.set_thetagrids(self.theta_grid, frac=1.06)
+        ax.set_rlabel_position(90)
+        ax.xaxis.label.set_color(grid_color)
+        ax.yaxis.label.set_color(grid_color)
+        ax.tick_params(axis='x', colors=theta_color)
+        ax.tick_params(axis='y', colors=grid_color)
+        ax.grid(color=grid_color)
+
+        ax.spines['polar'].set_color(grid_color)
+        ax.spines['polar'].set_visible(outline)
+
+        ax.set_xticklabels(self.theta_labels, fontsize=14)
+        ax.get_yaxis().set_major_formatter(ticker.FuncFormatter(formatter))
+        for tick in ax.yaxis.get_major_ticks():
+            tick.label1.set_horizontalalignment('center')
+            tick.label1.set_verticalalignment('top')
+
+        for s in self.surveys:
+            ax.scatter(s.ra, s.z, lw=0, alpha=0.7 * s.alpha, s=s.size * np.power(s.zmax / rmax, 1.7), c='k')
+        plt.tight_layout()
+        for filename in filenames:
+            fig.savefig(filename, dpi=dpi, bbox_inches="tight", pad_inches=0.1, transparent=True)
+
     def render2d(self, *filenames, grid=True, grid_color="#AAAAAA", theta_color="#111111", outline=True, backplot=True, layers=20, dpi=600):
         def formatter(x, p):
             return "$z=%.2f$" % x

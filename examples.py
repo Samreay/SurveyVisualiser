@@ -44,6 +44,7 @@ def make(name, data):
             vis.add_survey(d)
     else:
         vis.add_survey(data)
+    vis.render_latex(name.replace(".png", "_latex.png"))
     vis.render2d(name)
     print("Made figure for %s" % name)
 
@@ -75,13 +76,13 @@ def make_all_video(name=None):
 if __name__ == "__main__":
     make_figures()
     make_all_video()
-    # make_figures("sdss")
+    # make_figures("2df")
     # make_figures("all")
     # make_all_video("all")
     # make_figures("ozdes")
     # make_figures("sdss")
-    vis = Visualisation()
-    s = TwoDegreeField()
-    vis.add_survey(s)
+    # vis = Visualisation()
+    # s = TwoDegreeField()
+    # vis.add_survey(s)
     # make3d("2df", vis, 0, 0.7 * s.zmax, 0.7 * s.zmax)
 
