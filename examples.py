@@ -57,8 +57,8 @@ def get_permutations():
     x = SixDegreefField()
     o = OzDES()
     l = Tdflens()
-    groups = [[w, t, s, g, x, o], w, t, g, s, x, o, l, [l, o, t]]
-    names = ["all", "wigglez", "2df", "gama", "sdss", "6df", "ozdes", "2dflens", "sub"]
+    groups = [[w, t, s, g, x, o], [w, t, s, g, x], w, t, g, s, x, o, l, [l, o, t]]
+    names = ["all", "all_nooz", "wigglez", "2df", "gama", "sdss", "6df", "ozdes", "2dflens", "sub"]
     return groups, names
 
 
