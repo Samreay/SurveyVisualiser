@@ -56,9 +56,11 @@ def get_permutations():
     g = Gama()
     x = SixDegreefField()
     o = OzDES()
+    o2 = OzDES()
+    o2.zmax = 1.0
     l = Tdflens()
     p = Taipan()
-    groups = [[w, t, s, g, x, o], [w, t, s, g, x], w, t, g, s, x, o, l, [l, o, t], p]
+    groups = [[w, t, s, g, x, o], [w, t, s, g, x], w, t, g, s, x, o, l, [l, o2, t], p]
     names = ["all", "all_nooz", "wigglez", "2df", "gama", "sdss", "6df", "ozdes", "2dflens", "sub", "taipan"]
     return groups, names
 
@@ -76,9 +78,10 @@ def make_all_video(name=None):
 
 
 if __name__ == "__main__":
-    make_figures()
-    make_all_video()
-    # make_figures("taipan")
+    # make_figures()
+    # make_all_video()
+    # make_figures("tdflens")
+    make_figures("sub")
     # make_figures("all")
     # make_all_video("all")
     # make_figures("ozdes")
