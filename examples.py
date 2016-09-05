@@ -1,4 +1,4 @@
-from surveyvis.surveys import WiggleZ, TwoDegreeField, Gama, SDSS, SixDegreefField, Dummy, Dummy2, OzDES
+from surveyvis.surveys import WiggleZ, TwoDegreeField, Gama, SDSS, SixDegreefField, Dummy, Dummy2, OzDES, Tdflens
 from surveyvis.visualiser import Visualisation
 import numpy as np
 from joblib import Parallel, delayed
@@ -56,8 +56,9 @@ def get_permutations():
     g = Gama()
     x = SixDegreefField()
     o = OzDES()
-    groups = [[w, t, s, g, x, o], w, t, g, s, x, o]
-    names = ["all", "wigglez", "2df", "gama", "sdss", "6df", "ozdes"]
+    l = Tdflens()
+    groups = [[w, t, s, g, x, o], w, t, g, s, x, o, l, [l, o, t]]
+    names = ["all", "wigglez", "2df", "gama", "sdss", "6df", "ozdes", "2dflens", "sub"]
     return groups, names
 
 

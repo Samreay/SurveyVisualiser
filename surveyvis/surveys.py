@@ -85,3 +85,11 @@ class OzDES(Survey):
         self.size = 1.1
         self.alpha = 1.0
         self.color = "#da6016"
+
+
+class Tdflens(Survey):
+    def __init__(self):
+        data = np.load("surveyvis/data/tdflens.npy")
+        super().__init__(data[:, 0] * np.pi / 180, data[:, 1] * np.pi / 180, data[:, 2], zmax=1.0)
+        # self.size = 1.1
+        # self.alpha = 1.0
