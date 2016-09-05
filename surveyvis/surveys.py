@@ -8,11 +8,10 @@ class Survey(object):
         self.z = z
         self.zmax = zmax
 
-        dra = 0
-        ddec = -1.0
-        self.zs = np.sin(ra + dra) * np.cos(dec + ddec) * z
-        self.xs = np.sin(ra + dra) * np.sin(dec + ddec) * z
-        self.ys = np.cos(ra + dra) * z
+        dec = np.pi / 2 - dec
+        self.xs = np.cos(ra) * np.sin(dec) * z
+        self.ys = np.sin(ra) * np.sin(dec) * z
+        self.zs = np.cos(dec) * z
         self.size = 1.0
         self.alpha = 0.5
         self.color = "#1E3B9C"

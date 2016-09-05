@@ -78,12 +78,12 @@ def make_all_video(name=None):
 
 
 if __name__ == "__main__":
-    # make_figures()
-    # make_all_video()
+    make_figures()
+    make_all_video()
     # make_figures("tdflens")
-    make_figures("sub")
+    # make_figures("sub")
     # make_figures("all")
-    # make_all_video("all")
+    # make_all_video("6df")
     # make_figures("ozdes")
     # make_figures("sdss")
     # vis = Visualisation()
