@@ -1,4 +1,4 @@
-from surveyvis.surveys import WiggleZ, TwoDegreeField, Gama, SDSS, SixDegreefField, Dummy, Dummy2, OzDES, Tdflens
+from surveyvis.surveys import WiggleZ, TwoDegreeField, Gama, SDSS, SixDegreefField, Dummy, Dummy2, OzDES, Tdflens, Taipan
 from surveyvis.visualiser import Visualisation
 import numpy as np
 from joblib import Parallel, delayed
@@ -57,8 +57,9 @@ def get_permutations():
     x = SixDegreefField()
     o = OzDES()
     l = Tdflens()
-    groups = [[w, t, s, g, x, o], [w, t, s, g, x], w, t, g, s, x, o, l, [l, o, t]]
-    names = ["all", "all_nooz", "wigglez", "2df", "gama", "sdss", "6df", "ozdes", "2dflens", "sub"]
+    p = Taipan()
+    groups = [[w, t, s, g, x, o], [w, t, s, g, x], w, t, g, s, x, o, l, [l, o, t], p]
+    names = ["all", "all_nooz", "wigglez", "2df", "gama", "sdss", "6df", "ozdes", "2dflens", "sub", "taipan"]
     return groups, names
 
 
@@ -77,7 +78,7 @@ def make_all_video(name=None):
 if __name__ == "__main__":
     make_figures()
     make_all_video()
-    # make_figures("2df")
+    # make_figures("taipan")
     # make_figures("all")
     # make_all_video("all")
     # make_figures("ozdes")

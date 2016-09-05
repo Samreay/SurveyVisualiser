@@ -93,3 +93,11 @@ class Tdflens(Survey):
         super().__init__(data[:, 0] * np.pi / 180, data[:, 1] * np.pi / 180, data[:, 2], zmax=1.0)
         # self.size = 1.1
         # self.alpha = 1.0
+
+
+class Taipan(Survey):
+    def __init__(self):
+        data = np.load("surveyvis/data/taipan.npy")
+        super().__init__(data[:, 0] * np.pi / 180, data[:, 1] * np.pi / 180, data[:, 2], zmax=0.2)
+        self.size = 1.0
+        self.alpha = 0.4
