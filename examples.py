@@ -8,7 +8,7 @@ import os
 def make3d(name, vis, i, maxr, minr):
     name = "output/%s" % name
     rad = i * np.pi / 180
-    elev = 30 + 30 * np.cos(rad)
+    elev = -(30 + 30 * np.cos(rad))
     d = min(np.abs(200 - i), np.abs(360 + i - 200))
     r = maxr - (maxr - minr) * (1 - np.exp(-(d / 140) ** 2))
     if not os.path.exists(name):
@@ -87,7 +87,8 @@ if __name__ == "__main__":
     # make_figures("ozdes")
     # make_figures("sdss")
     # vis = Visualisation()
-    # s = TwoDegreeField()
+    # s = SixDegreefField()
     # vis.add_survey(s)
-    # make3d("2df", vis, 0, 0.7 * s.zmax, 0.7 * s.zmax)
+    # make3d("6df", vis, 0, 0.7 * s.zmax, 0.7 * s.zmax)
+    # make3d("6df", vis, 180, 0.7 * s.zmax, 0.7 * s.zmax)
 

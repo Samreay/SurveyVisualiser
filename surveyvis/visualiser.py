@@ -4,6 +4,7 @@ from matplotlib.ticker import MaxNLocator
 from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
 from scipy.ndimage.filters import gaussian_filter
+from scipy.misc import imresize
 
 
 class Visualisation(object):
@@ -68,12 +69,13 @@ class Visualisation(object):
             stacked += img
         first = np.clip(first, 0, 255)
         stacked = np.clip(stacked, 0, 255)
-        # first[(first[:, :, 0] == 0) & (first[:, :, 1] == 0) & (first[:, :, 2] == 0)] = 0
-        smoothed = np.dstack([gaussian_filter(stacked[:, :, i], sigma=10, truncate=3) for i in range(stacked.shape[2])])
-        s2 = gaussian_filter(stacked, sigma=10, truncate=3) * 0.2
-        m = np.mean(smoothed[:, :, :3], axis=2)
-        smoothed = np.dstack((m, m, m, smoothed[:, :, -1]))
-        add = (0.5 * np.floor(smoothed.astype(np.float32) + s2)).astype(np.int16)
+        stacked = imresize(stacked, 25)
+        smoothed = np.dstack([gaussian_filter(stacked[:, :, i], sigma=4, truncate=3) for i in range(stacked.shape[2])])
+        s2 = gaussian_filter(stacked, sigma=10, truncate=3)
+        add = np.floor(0.5 * smoothed + s2)
+        add = imresize(add, 400)
+        add = np.clip(add * 0.4, 0, 255)
+        add = add.astype(np.int16)
         add[add[:, :, -1] == 0] = 0
         first += add
         first = np.clip(first, 0, 255)
