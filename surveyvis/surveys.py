@@ -9,8 +9,8 @@ class Survey(object):
         self.zmax = zmax
 
         dec = np.pi / 2 - dec
-        self.xs = np.cos(ra) * np.sin(dec) * z
-        self.ys = np.sin(ra) * np.sin(dec) * z
+        self.ys = np.cos(ra) * np.sin(dec) * z
+        self.xs = np.sin(ra) * np.sin(dec) * z
         self.zs = np.cos(dec) * z
         self.size = 1.0
         self.alpha = 0.5

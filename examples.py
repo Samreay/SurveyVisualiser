@@ -78,7 +78,7 @@ def make_all_video(name=None):
 
 
 if __name__ == "__main__":
-    make_figures()
+    # make_figures()
     make_all_video()
     # make_figures("tdflens")
     # make_figures("sub")
