@@ -229,3 +229,5 @@ class Visualisation(object):
 
         for filename in filenames:
             fig.savefig(filename, dpi=dpi, bbox_inches=extent, pad_inches=0, transparent=True)
+            if ".png" in filename:
+                fig.savefig(filename.replace(".png", "_small.png"), dpi=dpi//2, bbox_inches=extent, pad_inches=0, transparent=True)
