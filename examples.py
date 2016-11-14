@@ -6,6 +6,23 @@ import os
 
 
 def make3d(name, vis, i, maxr, minr):
+    """
+     Outputs a PNG image of the surveys visualised at a
+     calculated camera position
+
+     Parameters
+     ----------
+     name : str
+        Name of the folder in which to put the file, and the start of the filename
+    vis : Visualisation
+        A Visualisation object
+    i : int
+        The index of the image. Aka the degrees around the camera has moved.
+    maxr : float
+        The maximum distance to put the camera
+    minr : float
+        The minimum distance to put the camera
+    """
     name = "output/%s" % name
     rad = i * np.pi / 180
     elev = -(30 + 30 * np.cos(rad))
@@ -17,39 +34,91 @@ def make3d(name, vis, i, maxr, minr):
 
 
 def make_video(name, data):
+    """
+    Render out all the still frames needed to make a video for the given data
+
+    After rendering out the video series, you turn this into an mpg video
+    by running the `make.bat`. For example, if I have generated all the
+    images for 2df, I can call `make.bat 2df` to turn those images
+    into a video.
+
+    Parameters
+    ----------
+    name : str
+        The name of the folder to put results in
+    data : list[Survey] | Survey
+        A list of Surveys add to the Visualisation, or a single
+        Survey if you only want one.
+    """
+
+    # Create an empty visualisation
     vis = Visualisation()
+
+    # Load the data into it
     if isinstance(data, list):
         for d in data:
             vis.add_survey(d)
     else:
         vis.add_survey(data)
+
+    # Get the redshift limits for each survey
     rs = [s.zmax for s in vis.surveys]
+
+    # Calculate the camera radius (min and max) from these values
     if len(rs) == 1:
         maxr = 0.7 * max(rs)
         minr = maxr
     else:
         maxr = 0.7 * max(rs)
         minr = 0.7 * min(rs)
+
+    # Using 4 cores, call make3d for each degree from 0 to 360
     Parallel(n_jobs=4)(delayed(make3d)(name, vis, int(i), minr, maxr) for i in np.linspace(0, 360, 360, endpoint=False))
 
 
 def make(name, data):
+    """
+    Render out the 2D images for the given data. Once for a latex image, and one for a colour image.
+
+    Parameters
+    ----------
+    name : str
+        The name of the output files
+    data : list[Survey] | Survey
+        A list of Surveys add to the Visualisation, or a single
+        Survey if you only want one.
+    """
+
+    # Set up filenames, make the folders if they dont exist
     output = "output"
     name = "%s/%s" % (output, name)
     if not os.path.exists(output):
         os.makedirs(output)
+
+    # Create Visualisation
     vis = Visualisation()
+
+    # Load data into Visualisation
     if isinstance(data, list):
         for d in data:
             vis.add_survey(d)
     else:
         vis.add_survey(data)
+
+    # Render the latex plot out
     vis.render_latex(name.replace(".png", "_latex.png"))
+
+    # Render the colour plot
     vis.render2d(name)
+
     print("Made figure for %s" % name)
 
 
 def get_permutations():
+    """
+    A helper function I call, that gives me a list of all the different plots I want
+    to create with their data.
+    """
     w = WiggleZ()
     t = TwoDegreeField()
     s = SDSS()
@@ -68,11 +137,34 @@ def get_permutations():
 
 
 def make_figures(name=None):
+    """
+    Makes all 2D figures for all permutations of data that I want
+
+    Parameters
+    ----------
+    name : str [optional]
+        If None, makes all permutations. If a string,
+        will only make the permutation matching with the same name.
+        See output of `get_permutations` for a list of names
+    """
     groups, names = get_permutations()
+    # Using 4 cores, make all the images we want
     Parallel(n_jobs=4)(delayed(make)(n + ".png", g) for n, g in zip(names, groups) if name is None or name == n)
 
 
 def make_all_video(name=None):
+    """
+    Makes all video series for all permutations of data that I want
+
+    Parameters
+    ----------
+    name : str [optional]
+        If None, makes all permutations. If a string,
+        will only make the permutation matching with the same name.
+        See output of `get_permutations` for a list of names
+    """
+
+    # Note we dont use Parallel processing here, because make_video already uses it
     groups, names = get_permutations()
     for n, g in zip(names, groups):
         if name is None or name == n:
@@ -80,18 +172,21 @@ def make_all_video(name=None):
 
 
 if __name__ == "__main__":
-    make_figures()
-    make_all_video()
+    # Uncomment the below two lines to do everything
+    # make_figures()
+    # make_all_video()
+
+    # As an example, make the 6df figures and video
+    make_figures("6df")
+    make_all_video("6df")
+
+
+    # Uncomment one of the below lines (and comment out the above two)
+    # to make only the plot declared
+
     # make_figures("ozdes_deep")
     # make_figures("ozdes")
     # make_figures("sub")
     # make_figures("all")
     # make_all_video("6df")
     # make_figures("ozdes")
-    # make_figures("sdss")
-    # vis = Visualisation()
-    # s = SixDegreefField()
-    # vis.add_survey(s)
-    # make3d("6df", vis, 0, 0.7 * s.zmax, 0.7 * s.zmax)
-    # make3d("6df", vis, 180, 0.7 * s.zmax, 0.7 * s.zmax)
-
