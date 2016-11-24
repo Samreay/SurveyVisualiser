@@ -35,6 +35,33 @@ class Survey(object):
         self.color = "#1E3B9C"
 
 
+class SupernovaSurvey(Survey):
+    """
+    The class that contains supernovae
+    """
+
+    def __init__(self):
+
+        data = np.load("surveyvis/data/supernovae.npy")
+        ra=data[:, 0] * np.pi / 180
+        dec=data[:, 1] * np.pi / 180
+        z=data[:, 2]
+
+        ts=data[:, 3]
+        mb=data[:, 4]
+        stretch=data[:, 5]
+        col=data[:, 6]
+
+
+        super().__init__(ra, dec, z, zmax=0.85)
+        self.ts = ts
+
+        self.stretch=stretch
+        self.mb=mb
+        self.color=col
+
+
+
 class Dummy(Survey):
     def __init__(self):
         """

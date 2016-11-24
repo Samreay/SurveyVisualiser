@@ -1,11 +1,11 @@
-from surveyvis.surveys import WiggleZ, TwoDegreeField, Gama, SDSS, SixDegreefField, Dummy, Dummy2, OzDES, Tdflens, Taipan
+from surveyvis.surveys import WiggleZ, TwoDegreeField, Gama, SDSS, SixDegreefField, Dummy, Dummy2, OzDES, Tdflens, Taipan, SupernovaSurvey
 from surveyvis.visualiser import Visualisation
 import numpy as np
 from joblib import Parallel, delayed
 import os
 
 
-def make3d(name, vis, i, maxr, minr):
+def make3d(name, vis, i, maxr, minr, low_quality=False, t=0,  plotsupernovae=False, blur=True):
     """
      Outputs a PNG image of the surveys visualised at a
      calculated camera position
@@ -24,16 +24,18 @@ def make3d(name, vis, i, maxr, minr):
         The minimum distance to put the camera
     """
     name = "output/%s" % name
+
+
     rad = i * np.pi / 180
     elev = -(30 + 30 * np.cos(rad))
     d = min(np.abs(200 - i), np.abs(360 + i - 200))
     r = maxr - (maxr - minr) * (1 - np.exp(-(d / 140) ** 2))
     if not os.path.exists(name):
         os.makedirs(name)
-    vis.render3d("%s/3d_%d.png" % (name, i), rmax=r, elev=elev, azim=i)
+    vis.render3d("%s/3d_%d.png" % (name, i), rmax=r, elev=elev, azim=i, low_quality=low_quality, t=t, blur=blur)
 
 
-def make_video(name, data):
+def make_video(name, data, low_quality=False,   no_frames=360, plotsupernovae=False, blur=True):
     """
     Render out all the still frames needed to make a video for the given data
 
@@ -61,6 +63,9 @@ def make_video(name, data):
     else:
         vis.add_survey(data)
 
+    if plotsupernovae:
+        vis.add_survey(SupernovaSurvey())
+
     # Get the redshift limits for each survey
     rs = [s.zmax for s in vis.surveys]
 
@@ -73,7 +78,10 @@ def make_video(name, data):
         minr = 0.7 * min(rs)
 
     # Using 4 cores, call make3d for each degree from 0 to 360
-    Parallel(n_jobs=4)(delayed(make3d)(name, vis, int(i), minr, maxr) for i in np.linspace(0, 360, 360, endpoint=False))
+    ilist=np.linspace(0,            360,          no_frames, endpoint=False)
+    tlist=np.linspace(56548.121,    57412.457,  no_frames, endpoint=False)
+
+    Parallel(n_jobs=1)(delayed(make3d)(name, vis, int(i), minr, maxr, low_quality, t, plotsupernovae, blur) for i,t in zip( ilist, tlist ))
 
 
 def make(name, data):
@@ -136,7 +144,7 @@ def get_permutations():
     return groups, names
 
 
-def make_figures(name=None):
+def make_figures(name=None, blur=True):
     """
     Makes all 2D figures for all permutations of data that I want
 
@@ -149,10 +157,10 @@ def make_figures(name=None):
     """
     groups, names = get_permutations()
     # Using 4 cores, make all the images we want
-    Parallel(n_jobs=4)(delayed(make)(n + ".png", g) for n, g in zip(names, groups) if name is None or name == n)
+    Parallel(n_jobs=1)(delayed(make)(n + ".png", g) for n, g in zip(names, groups) if name is None or name == n)
 
 
-def make_all_video(name=None):
+def make_all_video(name=None, low_quality=False, no_frames=360, plotsupernovae=False, blur=True):
     """
     Makes all video series for all permutations of data that I want
 
@@ -168,7 +176,7 @@ def make_all_video(name=None):
     groups, names = get_permutations()
     for n, g in zip(names, groups):
         if name is None or name == n:
-            make_video(n, g)
+            make_video(n, g, low_quality=low_quality, no_frames=no_frames, plotsupernovae=plotsupernovae, blur=blur)
 
 
 if __name__ == "__main__":
@@ -177,8 +185,8 @@ if __name__ == "__main__":
     # make_all_video()
 
     # As an example, make the 6df figures and video
-    make_figures("6df")
-    make_all_video("6df")
+    #make_figures("6df")
+    make_all_video("ozdes", low_quality=False, no_frames=10, plotsupernovae=True, blur=True)
 
 
     # Uncomment one of the below lines (and comment out the above two)
