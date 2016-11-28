@@ -6,7 +6,6 @@ import numpy as np
 from scipy.ndimage.filters import gaussian_filter
 from scipy.misc import imresize
 from surveyvis.surveys import SupernovaSurvey
-import sncosmo
 
 
 class Visualisation(object):
