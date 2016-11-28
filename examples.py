@@ -188,8 +188,9 @@ if __name__ == "__main__":
 
     # As an example, make the 6df figures and video
     #make_figures("6df")
-    tlist=np.linspace(56548.121,    57412.457,  no_frames, endpoint=False)
-    make_all_video("ozdes", low_quality=False, no_frames=10, plotsupernovae=True, blur=True, tlist=tlist)
+    noframes=10
+    tlist=np.linspace(56548.121,    57412.457,  noframes, endpoint=False)
+    make_all_video("ozdes", low_quality=False, no_frames=noframes, plotsupernovae=True, blur=True, tlist=tlist)
 
 
     # Uncomment one of the below lines (and comment out the above two)
