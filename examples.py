@@ -25,6 +25,13 @@ def make3d(name, vis, i, maxr, minr, low_quality=False, t=0,  plotsupernovae=Fal
     """
     name = "output/%s" % name
 
+    if plotsupernovae:
+        for s in vis.surveys:
+            if isinstance(s,SupernovaSurvey):
+                continue
+            else:
+                vis.add_survey(SupernovaSurvey())
+
 
     rad = i * np.pi / 180
     elev = -(30 + 30 * np.cos(rad))
@@ -67,7 +74,7 @@ def make_video(name, data, low_quality=False,   no_frames=360, plotsupernovae=Fa
         supersurvey=SupernovaSurvey()
         supersurvey.t_line=tlist
 
-        vis.add_survey(SupernovaSurvey())
+        vis.add_survey(supersurvey)
 
     # Get the redshift limits for each survey
     rs = [s.zmax for s in vis.surveys]
