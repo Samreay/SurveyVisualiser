@@ -124,34 +124,31 @@ class Visualisation(object):
             for s in self.surveys:
                 if isinstance(s, SupernovaSurvey):
                     # Code that plots supernova
-                    print(i,"FOUND A SUPERNOVA")
-                    """
-                    [MISSINGNO]
-                    Important Supernovae Code goes here, getting appearance and performing scatter
-                    Note, might need to send this outside of the 'i' loop for additive layering, for efficiency
-                    """
+                    print("Layer:",i,"FOUND A SUPERNOVA")
+
                     size=np.round(np.array([max(0,t-tstart)**2 for tstart in s.ts])/100,0) #Placeholder only
 
                     C=[""]*len(size)
-                    rgb=np.vstack([size**2,size**2,size**2]).T
+                    rgb=np.vstack([s.get_color(t,'r'),s.get_color(t,'g'),s.get_color(t,'b')]).T #Flux Array
 
-                    bright=min(1,size[i])
+                    bright=sum(rgb.T)/0.005
+                    size=bright*20
+                    print(max(size))
 
-                    for i in range(len(size)): #Turn RGB's into colors
-                        if max(rgb[i,:])>0:
-                            rgb[i,:]=int((1-rgb[i,:]/max(rgb[i,:]))*255*bright[i])
+                    for j in range(len(size)): #Turn RGB's into colors
+
+                        if max(rgb[j,:])>0:
+                            rgb[j,:] = rgb[j,:]/max(rgb[j,:]) * 255 * min(1, bright[j])
                         else:
-                            rgb[i,:]=np.array( [0,0,0] )
+                            rgb[j,:] = np.array( [0,0,0] )
 
-                        C[i]='#%02x%02x%02x' % (int(rgb[i,0]), int(rgb[i,1]), int(rgb[i,2]) )
+                        C[j]='#%02x%02x%02x' % (int(rgb[j,0]), int(rgb[j,1]), int(rgb[j,2]) )
 
                     #Need Color Interpretation
-                    ax.scatter(s.xs[i::layers], s.ys[i::layers], s.zs[i::layers], lw=0, alpha=1, s=size, c=C)
-
-
+                    ax.scatter(s.xs[i::layers], s.ys[i::layers], s.zs[i::layers], lw=0, alpha=1, s=100, c=C)
 
                 else:
-                    print(i,"FOUND A NOT SUPERNOVA")
+                    print("Layer:",i,"FOUND A NOT SUPERNOVA")
                     ax.scatter(s.xs[i::layers], s.ys[i::layers], s.zs[i::layers], lw=0, alpha=0.9*s.alpha, s=0.3 * s.size * s.zmax / rmax, c=s.color)
 
             # Render the plot and then steal the RGB buffer again

@@ -70,7 +70,7 @@ class SupernovaSurvey(Survey):
         self.flux_g = np.array([[]])
         self.flux_b = np.array([[]])
         self.flux_i = np.array([[]])
-        self.flux_b = np.array([[]])
+        self.flux_u = np.array([[]])
 
         self.fluxes=[self.flux_r, self.flux_g, self.flux_b, self.flux_i, self.flux_u]
 
@@ -94,7 +94,7 @@ class SupernovaSurvey(Survey):
         #Reading time to get fluxes
         if t in self.t_line:
             #Read Direct
-            for tl,fluxrow in self.t_line, fluxarray:
+            for tl,fluxrow in zip(self.t_line, fluxarray):
                 if tl==t:
                     return(fluxrow)
 
@@ -107,24 +107,25 @@ class SupernovaSurvey(Survey):
 
         else:
             print("Possible time-domain error on flux get. Returning Zero Flux")
-            return( np.zeros[ len( self.ra ) ])
+            return( np.zeros([len( self.ra )]) )
 
     def set_color(self, colname):
         #Use self.t_line to generate color array
 
         #Get the array you're working with:
-        for name,arr in zip(self.colnames,self.fluxes):
+        for name, index in zip(self.colnames, np.arange( len(self.colnames) )):
             if name==colname:
-                fluxarray=arr
+                fluxarray = self.fluxes[index]
+                print("Setting Supernovae Colours for ",name)
                 break
 
         #Make array empty and correct shape
-        fluxarray=np.zeros([len(self.t_line),len(self.ra)])
+        self.fluxes[index]=np.zeros([len(self.t_line),len(self.ra)])
 
         model = snc.Model(source='salt2')
 
         #Get band filter name to work with sncosmo
-        bands = ["desr", "desg", "desb", "desi", "desu"]
+        bands = ["bessellr", "bessellv", "bessellb", "besselli", "bessellux"]
         for bn,cn in zip(bands,self.colnames):
             if colname==cn:
                 bandname=bn
@@ -146,14 +147,20 @@ class SupernovaSurvey(Survey):
                      'zpsys': zpsys})
 
         #Itterate over each supernovae and get the light curve
-        for i,zi,tsi,x0i,x1i,ci, in zip(np.arange(len(self.z)), self.z, self.mb, self.xs, self.color):
+
+        for i,zi,tsi,x0i,x1i,ci, in zip(np.arange(len(self.z)), self.z, self.ts, self.mb, self.xs, self.color):
+
             params = {'z': zi, 't0': tsi, 'x0': x0i, 'x1': x1i, 'c': ci}
-            lcs = snc.realize_lcs(obs, model, [params], scatter=False)
-            fcol=np.array(lcs[0]["flux"])
-            fluxarray[i,:]=fcol
+            try:
+                lcs = snc.realize_lcs(obs, model, [params], scatter=False)
+                fcol=np.array(lcs[0]["flux"])
+            except:
+                fcol=np.zeros([len(self.t_line)])
+
+            self.fluxes[index][:,i]=fcol
 
     def set_all_colors(self):
-        for name in zip(self.colnames):
+        for name in self.colnames:
             self.set_color(name)
 
 

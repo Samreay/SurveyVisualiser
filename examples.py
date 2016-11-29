@@ -25,13 +25,20 @@ def make3d(name, vis, i, maxr, minr, low_quality=False, t=0,  plotsupernovae=Fal
     """
     name = "output/%s" % name
 
+
+
     if plotsupernovae:
+        SN_in_vis = False
         for s in vis.surveys:
             if isinstance(s,SupernovaSurvey):
-                continue
-            else:
-                vis.add_survey(SupernovaSurvey())
+                SN_in_vis = True
 
+        if SN_in_vis == False:
+            print("Adding Supernovae from make3d()")
+            s=SupernovaSurvey()
+            s.t_line=np.array([t])
+            s.set_all_colors()
+            vis.add_survey(s)
 
     rad = i * np.pi / 180
     elev = -(30 + 30 * np.cos(rad))
@@ -71,8 +78,10 @@ def make_video(name, data, low_quality=False,   no_frames=360, plotsupernovae=Fa
         vis.add_survey(data)
 
     if plotsupernovae:
+        print("Adding Supernovae To Visualiser from make_video()")
         supersurvey=SupernovaSurvey()
         supersurvey.t_line=tlist
+        supersurvey.set_all_colors()
 
         vis.add_survey(supersurvey)
 
