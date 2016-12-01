@@ -52,6 +52,7 @@ class SupernovaSurvey(Survey):
 
         ts=data[:, 3]
         mb=data[:, 4]
+        x0=np.exp(-0.9209*mb+9.7921)
         stretch=data[:, 5]
         col=data[:, 6]
 
@@ -62,6 +63,7 @@ class SupernovaSurvey(Survey):
         self.stretch=stretch
         self.mb=mb
         self.color=col
+        self.x0=x0
 
         #Create empty flux arrays
         self.colnames=['r', 'g', 'b', 'i', 'u']
@@ -81,6 +83,7 @@ class SupernovaSurvey(Survey):
 
         #For single frame renders, check if time has not been set
         if len(self.t_line)==0:
+            print("Time Line Not set. Rending for t=",t)
             self.t_line=np.array([t])
             self.set_all_colors()
 
@@ -148,7 +151,7 @@ class SupernovaSurvey(Survey):
 
         #Itterate over each supernovae and get the light curve
 
-        for i,zi,tsi,x0i,x1i,ci, in zip(np.arange(len(self.z)), self.z, self.ts, self.mb, self.xs, self.color):
+        for i,zi,tsi,x0i,x1i,ci, in zip(np.arange(len(self.z)), self.z, self.ts, self.x0, self.xs, self.color):
 
             params = {'z': zi, 't0': tsi, 'x0': x0i, 'x1': x1i, 'c': ci}
             try:

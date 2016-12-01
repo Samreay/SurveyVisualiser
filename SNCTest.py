@@ -12,7 +12,6 @@ N=1000
 tpeak=0
 
 
-band=['bessellb']*N
 gain=[1]*N
 skynoise=[0]*N
 zp=[0]*N
@@ -20,10 +19,12 @@ zpsys=['ab']*N
 
 model = snc.Model(source='salt2')
 
-for x1 in np.linspace(-4,4,1):
-    for c in np.linspace(-.2, .6, 1):
+for x1 in [1]:
+    for filter,c in zip(['besselli','bessellr','bessellv','bessellb','bessellux'],['k','r','g','b','purple']):
 
-        print("Plotting for x1=",x1,"c=",c)
+        band = [filter] * N
+
+        print("Plotting for ",filter,"c=",c)
 
         span=200
         tmin = tpeak - span * 1 / 4
@@ -37,11 +38,17 @@ for x1 in np.linspace(-4,4,1):
                      'zp': zp,
                      'zpsys': zpsys})
 
-        params = {'z': 0.4, 'x0': 1e-5, 't0': 0, 'x1': 0.1, 'c': -0.1}
+        x0=4e-6
+        z=0.4
+        params = {'z': 0.4, 'x0': x0, 't0': 0, 'x1': 0.1, 'c': -0.1}
 
         lcs = snc.realize_lcs(obs, model, [params],scatter=False)
         x,y=lcs[0]["time"],lcs[0]["flux"]
-        plt.plot(x,y)
+        plt.plot(x,y,c=c)
+        plt.xlim(xmin=-50,xmax=150)
+        title=str(z)+","+str(x0)+","+str(x1)+","+str(filter)
+        plt.ylim(ymin=0)
+        plt.title(title)
 
 
 
