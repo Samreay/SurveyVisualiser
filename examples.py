@@ -204,7 +204,7 @@ if __name__ == "__main__":
 
     # As an example, make the 6df figures and video
     #make_figures("6df")
-    noframes=32
+    noframes=128
     tlist=np.linspace(56548.121,    56548.121-2*(56548.121-57412.457),  noframes, endpoint=False)
     make_all_video("ozdes", low_quality=False, no_frames=noframes, plotsupernovae=True, blur=True, tlist=tlist)
 

@@ -125,10 +125,10 @@ class Visualisation(object):
                 if isinstance(s, SupernovaSurvey):
                     # Code that plots supernova
                     print("Layer:",i,"FOUND A SUPERNOVA")
-                    maxscale=100
-                    maxtime=200
+                    maxscale=1000
+                    maxtime=125
 
-                    size=(t-s.ts+50)/maxtime
+                    size=(t-s.ts+25)/maxtime
                     size=size*(size>0)
                     size=size**2*maxscale
                     size=size.astype(np.int16)
@@ -139,6 +139,7 @@ class Visualisation(object):
 
                     bright=(1-size/maxscale) * (size<maxscale) * (size>0) #mockup
                     bright=sum(rgb.T)/s.x0/1e-4/3 * (size<maxscale) * (size>0)
+                    bright=bright / size * 100
 
                     for j in range(len(size)): #Turn RGB's into colors
 
