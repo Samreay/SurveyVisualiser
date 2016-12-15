@@ -114,25 +114,32 @@ def make(name, data):
     print("Made figure for %s" % name)
 
 
-def get_permutations():
+def get_permutations(full_data=False):
     """
     A helper function I call, that gives me a list of all the different plots I want
     to create with their data.
     """
-    w = WiggleZ()
-    t = TwoDegreeField()
-    s = SDSS()
-    g = Gama()
-    x = SixDegreefField()
-    o = OzDES()
-    o2 = OzDES()
-    o3 = OzDES()
-    o2.zmax = 1.0
-    o3.zmax = 4.0
-    l = Tdflens()
-    p = Taipan()
-    groups = [[w, t, s, g, x, o], [w, t, s, g, x], w, t, g, s, x, o, l, [l, o2, t], p, [l, t, o3]]
-    names = ["all", "all_nooz", "wigglez", "2df", "gama", "sdss", "6df", "ozdes", "2dflens", "sub", "taipan", "ozdes_deep"]
+    if full_data:
+        w = WiggleZ()
+        t = TwoDegreeField()
+        s = SDSS()
+        g = Gama()
+        x = SixDegreefField()
+        o = OzDES()
+        o2 = OzDES()
+        o3 = OzDES()
+        o2.zmax = 1.0
+        o3.zmax = 4.0
+        l = Tdflens()
+        p = Taipan()
+        groups = [[w, t, s, g, x, o], [w, t, s, g, x], w, t, g, s, x, o, l, [l, o2, t], p, [l, t, o3]]
+        names = ["all", "all_nooz", "wigglez", "2df", "gama", "sdss", "6df", "ozdes", "2dflens", "sub", "taipan", "ozdes_deep"]
+    else:
+        t = TwoDegreeField()
+        s = SDSS()
+        x = SixDegreefField()
+        groups = [[t, s, x], t, s, x]
+        names = ["all_small", "2df", "sdss", "6df"]
     return groups, names
 
 
