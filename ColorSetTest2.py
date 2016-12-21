@@ -1,22 +1,28 @@
-from surveyvis.surveys import WiggleZ, TwoDegreeField, Gama, SDSS, SixDegreefField, Dummy, Dummy2, OzDES, Tdflens, Taipan, SupernovaSurvey
+from surveyvis.surveys import OzDES, SupernovaSurvey
 from surveyvis.visualiser import Visualisation
-import matplotlib.pyplot as plt
-import numpy as np
-from joblib import Parallel, delayed
-import os
+#import matplotlib.pyplot as plt
+#import numpy as np
+#from joblib import Parallel, delayed
+#import os
 
-s=SupernovaSurvey()
+
 #s.t_line=np.linspace(56500,    58000,  32, endpoint=False)
 #s.set_all_colors()
 
-t=57300
+t=57412
 
-r,g,b=s.get_color(t,'r'),s.get_color(t,'g'),s.get_color(t,'b')
+o = OzDES()
+s=SupernovaSurvey()
 
 
-vis=Visualisation()
-o=OzDES()
-vis.add_survey(o)
-vis.add_survey(s)
+for redshift in [False,True]:
 
-vis.render3d(t=t,filename="Test")
+    vis = Visualisation()x
+    vis.add_survey(o)
+    vis.add_survey(s)
+
+    for falsecolor in ['redshiftonly']:
+        for contrast in [1,2,4]:
+            name=str(redshift)+"_"+str(falsecolor)+"_"+str(contrast).replace('.','-')
+            print(name)
+            vis.render3d(t=t, filename=name, azim=300, elev=20, falsecolor=falsecolor, contrast=contrast, redshift=redshift)

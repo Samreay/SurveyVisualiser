@@ -5,7 +5,7 @@ from joblib import Parallel, delayed
 import os
 
 
-def make3d(name, vis, i, maxr, minr, low_quality=False, t=0,  plotsupernovae=False, blur=True):
+def make3d(name, vis, i, maxr, minr, low_quality=False, t=0,  plotsupernovae=False, blur=True, contrast=1, falsecolor='rgb', redshift=True):
     """
      Outputs a PNG image of the surveys visualised at a
      calculated camera position
@@ -37,7 +37,7 @@ def make3d(name, vis, i, maxr, minr, low_quality=False, t=0,  plotsupernovae=Fal
             print("Adding Supernovae from make3d()")
             s=SupernovaSurvey()
             s.t_line=np.array([t])
-            s.set_all_colors()
+            s.set_all_colors(redshift=redshift)
             vis.add_survey(s)
 
     rad = i * np.pi / 180
@@ -46,10 +46,10 @@ def make3d(name, vis, i, maxr, minr, low_quality=False, t=0,  plotsupernovae=Fal
     r = maxr - (maxr - minr) * (1 - np.exp(-(d / 140) ** 2))
     if not os.path.exists(name):
         os.makedirs(name)
-    vis.render3d("%s/3d_%d_%f.png" % (name, i, t), rmax=r, elev=elev, azim=i, low_quality=low_quality, t=t, blur=blur)
+    vis.render3d("%s/3d_%d_%d.png" % (name, i, t), rmax=r, elev=elev, azim=i, low_quality=low_quality, t=t, blur=blur, contrast=contrast, falsecolor=falsecolor, redshift=redshift)
 
 
-def make_video(name, data, low_quality=False,   no_frames=360, plotsupernovae=False, blur=True, tlist=np.array([])):
+def make_video(name, data, low_quality=False,   no_frames=360, plotsupernovae=False, blur=True, tlist=np.array([]), contrast=1, falsecolor='rgb', redshift=True):
     """
     Render out all the still frames needed to make a video for the given data
 
@@ -81,7 +81,7 @@ def make_video(name, data, low_quality=False,   no_frames=360, plotsupernovae=Fa
         print("Adding Supernovae To Visualiser from make_video()")
         supersurvey=SupernovaSurvey()
         supersurvey.t_line=tlist
-        supersurvey.set_all_colors()
+        supersurvey.set_all_colors(redshift=redshift)
 
         vis.add_survey(supersurvey)
 
@@ -99,7 +99,7 @@ def make_video(name, data, low_quality=False,   no_frames=360, plotsupernovae=Fa
     # Using 4 cores, call make3d for each degree from 0 to 360
     ilist=np.linspace(0,            0,          no_frames, endpoint=False)
 
-    Parallel(n_jobs=1)(delayed(make3d)(name, vis, int(i), minr, maxr, low_quality, t, plotsupernovae, blur) for i,t in zip( ilist, tlist ))
+    Parallel(n_jobs=1)(delayed(make3d)(name, vis, int(i), minr, maxr, low_quality, t, plotsupernovae, blur, contrast, falsecolor, redshift) for i,t in zip( ilist, tlist ))
 
 
 def make(name, data):
@@ -178,7 +178,7 @@ def make_figures(name=None, blur=True):
     Parallel(n_jobs=1)(delayed(make)(n + ".png", g) for n, g in zip(names, groups) if name is None or name == n)
 
 
-def make_all_video(name=None, low_quality=False, no_frames=360, plotsupernovae=False, blur=True, tlist=np.array([])):
+def make_all_video(name=None, low_quality=False, no_frames=360, plotsupernovae=False, blur=True, tlist=np.array([]), contrast=1, falsecolor='rgb', redshift=True):
     """
     Makes all video series for all permutations of data that I want
 
@@ -194,7 +194,7 @@ def make_all_video(name=None, low_quality=False, no_frames=360, plotsupernovae=F
     groups, names = get_permutations()
     for n, g in zip(names, groups):
         if name is None or name == n:
-            make_video(n, g, low_quality=low_quality, no_frames=no_frames, plotsupernovae=plotsupernovae, blur=blur, tlist=tlist)
+            make_video(n, g, low_quality=low_quality, no_frames=no_frames, plotsupernovae=plotsupernovae, blur=blur, tlist=tlist, contrast=contrast, falsecolor=falsecolor, redshift=redshift)
 
 
 if __name__ == "__main__":
@@ -204,9 +204,9 @@ if __name__ == "__main__":
 
     # As an example, make the 6df figures and video
     #make_figures("6df")
-    noframes=128
-    tlist=np.linspace(56548.121,    56548.121-2*(56548.121-57412.457),  noframes, endpoint=False)
-    make_all_video("ozdes", low_quality=False, no_frames=noframes, plotsupernovae=True, blur=True, tlist=tlist)
+    noframes=64
+    tlist=np.round(np.linspace(56500,    58000,  noframes, endpoint=False),0)
+    make_all_video("ozdes", low_quality=False, no_frames=noframes, plotsupernovae=True, blur=True, tlist=tlist, contrast=2, falsecolor='rgb', redshift=True)
 
 
     # Uncomment one of the below lines (and comment out the above two)

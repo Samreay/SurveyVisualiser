@@ -41,7 +41,8 @@ class Visualisation(object):
         """
         self.surveys.append(survey)
 
-    def render3d(self, filename, rmax=None, elev=60, azim=70, layers=20, t=0, low_quality=False, blur=True):
+    def render3d(self, filename, rmax=None, elev=60, azim=70, layers=20, t=0, low_quality=False, blur=True, falsecolor='rgb', contrast=1, redshift=True):
+
         """
         Render a 3D still to file
 
@@ -124,27 +125,76 @@ class Visualisation(object):
             for s in self.surveys:
                 if isinstance(s, SupernovaSurvey):
                     # Code that plots supernova
-                    print("Layer:",i,"FOUND A SUPERNOVA")
                     maxscale=1000
-                    maxtime=125
+                    maxtime=75
 
                     size=(t-s.ts+25)/maxtime
+                    if redshift:
+                        size=size/(1+s.z)
                     size=size*(size>0)
                     size=size**2*maxscale
                     size=size.astype(np.int16)
 
                     C=[""]*len(size)
-                    rgb=np.vstack([s.get_color(t,'i')*3,s.get_color(t,'r')+s.get_color(t,'g')+s.get_color(t,'b'),s.get_color(t,'u')*3/2]).T #Flux Array
+
+                    vr = s.get_color(t, 'r', redshift=redshift)
+                    vg = s.get_color(t, 'g', redshift=redshift)
+                    vb = s.get_color(t, 'b', redshift=redshift)
+                    ir = s.get_color(t, 'i', redshift=redshift)
+                    uv = s.get_color(t, 'u', redshift=redshift)
+
+                    if falsecolor=='rgb':
+                        R=vr
+                        G=vg
+                        B=vb
+
+                    elif falsecolor=='ivu1':
+                        R=ir
+                        G=vg
+                        B=uv
+
+                    elif falsecolor=='ivu2':
+                        R=ir
+                        G=(vb+vg+vr)/3
+                        B=uv/2
+
+                    elif falsecolor=='ivu3':
+                        R=vg/2+vr+ir
+                        G=vb/2+vg+2/3*vr
+                        B=ir+vb+1/2*uv
+
+
+                    elif falsecolor=='rbslide':
+                        R=ir+(vr+vg+vb)/2
+                        G=(vr+vg+vb)/2
+                        B=(vr+vg+vb)/2+uv
+
+
+                    elif falsecolor == 'rbslide2':
+                        R=ir+vr+(vr+vg+vb)/2
+                        G=(vr+vg+vb)/2
+                        B=(vr+vg+vb)/2+vb+uv
+
+                    elif falsecolor== 'redshiftonly':
+                        R=s.x0*1e-4
+                        G=(1-(550/400-1)-s.z)
+                        G=G*(G>0)*s.x0*1e-4
+                        B=(1-(400/400-1)-s.z)
+                        B=B*(B>0)*s.x0*1e-4
+
+
+
+                    rgb = np.vstack([R,G,B]).T  # Flux Array
+
                     rgb=rgb*(rgb>0)
 
-                    bright=(1-size/maxscale) * (size<maxscale) * (size>0) #mockup
                     bright=sum(rgb.T)/s.x0/1e-4/3 * (size<maxscale) * (size>0)
                     bright=bright / size * 100
 
                     for j in range(len(size)): #Turn RGB's into colors
 
                         if max(rgb[j,:])>0:
-                            rgb[j,:] = rgb[j,:]/max(rgb[j,:]) * 255 * min(1, bright[j])
+                            rgb[j,:] = (rgb[j,:]/max(rgb[j,:]))**contrast * 255 * min(1, bright[j])
                         else:
                             rgb[j,:] = np.array( [255,255,255] )
 
@@ -156,7 +206,6 @@ class Visualisation(object):
                     ax.scatter(s.xs[i::layers], s.ys[i::layers], s.zs[i::layers], lw=0, alpha=1, s=size[i::layers], c=C[i::layers])
 
                 else:
-                    print("Layer:",i,"FOUND A NOT SUPERNOVA")
                     ax.scatter(s.xs[i::layers], s.ys[i::layers], s.zs[i::layers], lw=0, alpha=0.9*s.alpha, s=0.3 * s.size * s.zmax / rmax, c=s.color)
 
 

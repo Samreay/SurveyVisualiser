@@ -78,14 +78,14 @@ class SupernovaSurvey(Survey):
 
         self.t_line = np.array([]) #Time line used to generate colors. Needs to be set to do generate color arrays
 
-    def get_color(self, t, colname):
+    def get_color(self, t, colname, redshift=True):
         #Returns a vector of fluxes in a particular band for all supernovae at a specific time
 
         #For single frame renders, check if time has not been set
         if len(self.t_line)==0:
             print("Time Line Not set. Rending for t=",t)
             self.t_line=np.array([t])
-            self.set_all_colors()
+            self.set_all_colors(redshift=redshift)
 
         #Aquire the flux array
         for name,arr in zip(self.colnames,self.fluxes):
@@ -112,7 +112,7 @@ class SupernovaSurvey(Survey):
             print("Possible time-domain error on flux get. Returning Zero Flux")
             return( np.zeros([len( self.ra )]) )
 
-    def set_color(self, colname):
+    def set_color(self, colname, redshift=True):
         #Use self.t_line to generate color array
 
         #Get the array you're working with:
@@ -153,6 +153,9 @@ class SupernovaSurvey(Survey):
 
         for i,zi,tsi,x0i,x1i,ci, in zip(np.arange(len(self.z)), self.z, self.ts, self.x0, self.xs, self.color):
 
+            if redshift==False:
+                zi=0
+
             params = {'z': zi, 't0': tsi, 'x0': x0i, 'x1': x1i, 'c': ci}
             try:
                 lcs = snc.realize_lcs(obs, model, [params], scatter=False)
@@ -162,9 +165,9 @@ class SupernovaSurvey(Survey):
 
             self.fluxes[index][:,i]=fcol
 
-    def set_all_colors(self):
+    def set_all_colors(self, redshift=True):
         for name in self.colnames:
-            self.set_color(name)
+            self.set_color(name, redshift=redshift)
 
 
 
