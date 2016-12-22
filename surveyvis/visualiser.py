@@ -5,6 +5,7 @@ from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
 from scipy.ndimage.filters import gaussian_filter
 from scipy.misc import imresize
+from surveyvis.surveys import SupernovaSurvey
 
 
 class Visualisation(object):
@@ -40,7 +41,8 @@ class Visualisation(object):
         """
         self.surveys.append(survey)
 
-    def render3d(self, filename, rmax=None, elev=60, azim=70, layers=20):
+    def render3d(self, filename, rmax=None, elev=60, azim=70, layers=20, t=0, low_quality=False, blur=True, falsecolor='rgb', contrast=1, redshift=True):
+
         """
         Render a 3D still to file
 
@@ -59,12 +61,28 @@ class Visualisation(object):
             gives better results (to a point), but is slower.
         """
 
+        if low_quality:
+            print("Making low quality")
+            size = (4,4)
+            finsize = (4, 5.625*2/5)
+            layers = 2
+        else:
+            print("Making high quality")
+            size = (10,10)
+            finsize = (10, 5.625)
+
+        if blur:
+            print("Blur Enabled")
+        else:
+            print("Blur Disabled")
+
+
         # If no rmax specified, estimate one
         if rmax is None:
             rmax = 0.4 * max([s.zmax for s in self.surveys])
 
         # Create a figure
-        fig = plt.figure(figsize=(10,10), dpi=192, facecolor=self.plot_background_color, frameon=False)
+        fig = plt.figure(figsize=size, dpi=192, facecolor=self.plot_background_color, frameon=False)
         ax = fig.add_subplot(111, projection='3d', axisbg=self.axis_background_color)
 
         # Set background colours and screw around with things
@@ -105,7 +123,91 @@ class Visualisation(object):
 
             # Plot each survey
             for s in self.surveys:
-                ax.scatter(s.xs[i::layers], s.ys[i::layers], s.zs[i::layers], lw=0, alpha=0.9*s.alpha, s=0.3 * s.size * s.zmax / rmax, c=s.color)
+                if isinstance(s, SupernovaSurvey):
+                    # Code that plots supernova
+                    maxscale=1000
+                    maxtime=75
+
+                    size=(t-s.ts+25)/maxtime
+                    if redshift:
+                        size=size/(1+s.z)
+                    size=size*(size>0)
+                    size=size**2*maxscale
+                    size=size.astype(np.int16)
+
+                    C=[""]*len(size)
+
+                    vr = s.get_color(t, 'r', redshift=redshift)
+                    vg = s.get_color(t, 'g', redshift=redshift)
+                    vb = s.get_color(t, 'b', redshift=redshift)
+                    ir = s.get_color(t, 'i', redshift=redshift)
+                    uv = s.get_color(t, 'u', redshift=redshift)
+
+                    if falsecolor=='rgb':
+                        R=vr
+                        G=vg
+                        B=vb
+
+                    elif falsecolor=='ivu1':
+                        R=ir
+                        G=vg
+                        B=uv
+
+                    elif falsecolor=='ivu2':
+                        R=ir
+                        G=(vb+vg+vr)/3
+                        B=uv/2
+
+                    elif falsecolor=='ivu3':
+                        R=vg/2+vr+ir
+                        G=vb/2+vg+2/3*vr
+                        B=ir+vb+1/2*uv
+
+
+                    elif falsecolor=='rbslide':
+                        R=ir+(vr+vg+vb)/2
+                        G=(vr+vg+vb)/2
+                        B=(vr+vg+vb)/2+uv
+
+
+                    elif falsecolor == 'rbslide2':
+                        R=ir+vr+(vr+vg+vb)/2
+                        G=(vr+vg+vb)/2
+                        B=(vr+vg+vb)/2+vb+uv
+
+                    elif falsecolor== 'redshiftonly':
+                        R=s.x0*1e-4
+                        G=(1-(550/400-1)-s.z)
+                        G=G*(G>0)*s.x0*1e-4
+                        B=(1-(400/400-1)-s.z)
+                        B=B*(B>0)*s.x0*1e-4
+
+
+
+                    rgb = np.vstack([R,G,B]).T  # Flux Array
+
+                    rgb=rgb*(rgb>0)
+
+                    bright=sum(rgb.T)/s.x0/1e-4/3 * (size<maxscale) * (size>0)
+                    bright=bright / size * 100
+
+                    for j in range(len(size)): #Turn RGB's into colors
+
+                        if max(rgb[j,:])>0:
+                            rgb[j,:] = (rgb[j,:]/max(rgb[j,:]))**contrast * 255 * min(1, bright[j])
+                        else:
+                            rgb[j,:] = np.array( [255,255,255] )
+
+                        C[j]='#%02x%02x%02x' % (int(rgb[j,0]), int(rgb[j,1]), int(rgb[j,2]) )
+
+                    #print(np.vstack([size,bright,C]).T) #Debug Line
+
+                    #Need Color Interpretation
+                    ax.scatter(s.xs[i::layers], s.ys[i::layers], s.zs[i::layers], lw=0, alpha=1, s=size[i::layers], c=C[i::layers])
+
+                else:
+                    ax.scatter(s.xs[i::layers], s.ys[i::layers], s.zs[i::layers], lw=0, alpha=0.9*s.alpha, s=0.3 * s.size * s.zmax / rmax, c=s.color)
+
 
             # Render the plot and then steal the RGB buffer again
             fig.canvas.draw()
@@ -115,45 +217,51 @@ class Visualisation(object):
         for img in imgs:
             img[img[:, :, -1] == 0] = 0
             first += img
-            stacked += img
+            if blur==True:
+                stacked += img
 
         # Clip the values between 0 and 255 so we can turn back to 8bits
         first = np.clip(first, 0, 255)
         stacked = np.clip(stacked, 0, 255)
 
-        # Resize stacked so it is 25% of its original size, because this step is *slow*
-        stacked = imresize(stacked, 25)
-        # Run a gaussian filter of the layer to blur it, to simulate glow of some sort. Blue R, G, B, alpha individually
-        smoothed = np.dstack([gaussian_filter(stacked[:, :, i], sigma=4, truncate=3) for i in range(stacked.shape[2])])
-        # Now blur the colours togeter
-        s2 = gaussian_filter(stacked, sigma=10, truncate=3)
-        # Modify blur ratios (non-colour blur to colour blur)
-        add = np.floor(0.5 * smoothed + s2)
-        # Scale it back up to size
-        add = imresize(add, 400)
-        # Reclip it and decrease intensity to 40%
-        add = np.clip(add * 0.4, 0, 255)
-        # Turn it back to int16 so we can add it (gaussian_filter makes it all doubles)
-        add = add.astype(np.int16)
-        # Mask out 0 alpha values
-        add[add[:, :, -1] == 0] = 0
+        if blur==True:
+            # Resize stacked so it is 25% of its original size, because this step is *slow*
+            stacked = imresize(stacked, 25)
+            # Run a gaussian filter of the layer to blur it, to simulate glow of some sort. Blue R, G, B, alpha individually
+            smoothed = np.dstack([gaussian_filter(stacked[:, :, i], sigma=4, truncate=3) for i in range(stacked.shape[2])])
+            # Now blur the colours togeter
+            s2 = gaussian_filter(stacked, sigma=10, truncate=3)
+            # Modify blur ratios (non-colour blur to colour blur)
+            add = np.floor(0.5 * smoothed + s2)
+            # Scale it back up to size
+            add = imresize(add, 400)
+            # Reclip it and decrease intensity to 40%
+            add = np.clip(add * 0.4, 0, 255)
+            # Turn it back to int16 so we can add it (gaussian_filter makes it all doubles)
+            add = add.astype(np.int16)
+            # Mask out 0 alpha values
+            add[add[:, :, -1] == 0] = 0
 
-        # Finally, add in our glow
-        first += add
+            # Finally, add in our glow
+            first += add
 
-        # And reclip
-        first = np.clip(first, 0, 255)
+            # And reclip
+            first = np.clip(first, 0, 255)
 
         # Turn it back to 8bits
         first = first.astype(np.uint8)
 
         # Crop out the top and bottom so we get the right aspect ratio for our video
-        i1 = w//2 - 1080//2
-        i2 = w//2 + 1080//2
+        if low_quality:
+            i1 = w//2 - int(1080*2/5)//2
+            i2 = w//2 + int(1080*2/5)//2
+        else:
+            i1 = w//2 - 1080//2
+            i2 = w//2 + 1080//2
         first = first[i1:i2, :, :]
 
         # Create a new plot, where we will plot our final image, which is called "first"
-        fig, ax = plt.subplots(figsize=(10, 5.625), dpi=192, frameon=False)
+        fig, ax = plt.subplots(figsize=finsize, dpi=192, frameon=False)
         plt.axis("off")
         fig.subplots_adjust(0, 0, 1, 1)
         ax.imshow(first, aspect='auto')
