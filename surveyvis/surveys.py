@@ -1,10 +1,9 @@
 import numpy as np
-import sncosmo as snc
 from astropy.table import Table as table
 
 
 class Survey(object):
-    def __init__(self, ra, dec, z, zmax=1.0):
+    def __init__(self, ra, dec, z, zmax=None):
         """
         An object to hold coordinates and plotting information
 
@@ -23,6 +22,7 @@ class Survey(object):
         self.ra = ra
         self.dec = dec
         self.z = z
+        zmax = zmax or np.max(z)
         self.zmax = zmax
 
         # Conver to Cartesian
@@ -34,145 +34,145 @@ class Survey(object):
         # Some plotting values you can override. Scatter size, alpha and colour.
         self.size = 1.0
         self.alpha = 0.5
-        self.color = "#1E3B9C"
+        self.cs = "#1E3B9C"
 
 
-class SupernovaSurvey(Survey):
+class StaticSurvey(Survey):
+    def __init__(self, ra, dec, z, zmax=1.0):
+        super().__init__(ra, dec, z, zmax=zmax)
+
+
+class SupernovaeSurvey(Survey):
     """
     The class that contains supernovae
     """
 
-    def __init__(self):
+    def __init__(self, ra, dec, z, ts, mb, x1, c, zmax=None):
 
-        #Load the data from the file
-        data = np.load("surveyvis/data/supernovae.npy")
-        ra=data[:, 0] * np.pi / 180
-        dec=data[:, 1] * np.pi / 180
-        z=data[:, 2]
+        super().__init__(ra, dec, z, zmax=zmax)
 
-        ts=data[:, 3]
-        mb=data[:, 4]
-        x0=np.exp(-0.9209*mb+9.7921)
-        stretch=data[:, 5]
-        col=data[:, 6]
+        self.ts = ts
+        self.x1s = x1
+        self.mbs = mb
+        self.cs = c
 
-        #Generate class
-        super().__init__(ra, dec, z, zmax=0.85)
-        self.ts = ts #Peak Times
+        x0 = np.exp(-0.9209 * mb + 9.7921)  # Note that we dont show varying mB this is mostly just for sncosmo
+        self.x0s = x0
 
-        self.stretch=stretch
-        self.mb=mb
-        self.color=col
-        self.x0=x0
+    def get_colors(self, time, style="ivu2", redshift=True, layers=1):
+        import sncosmo
+        model = sncosmo.Model(source='salt2')
 
-        #Create empty flux arrays
-        self.colnames=['r', 'g', 'b', 'i', 'u']
-
-        self.flux_r = np.array([[]])
-        self.flux_g = np.array([[]])
-        self.flux_b = np.array([[]])
-        self.flux_i = np.array([[]])
-        self.flux_u = np.array([[]])
-
-        self.fluxes=[self.flux_r, self.flux_g, self.flux_b, self.flux_i, self.flux_u]
-
-        self.t_line = np.array([]) #Time line used to generate colors. Needs to be set to do generate color arrays
-
-    def get_color(self, t, colname, redshift=True):
-        #Returns a vector of fluxes in a particular band for all supernovae at a specific time
-
-        #For single frame renders, check if time has not been set
-        if len(self.t_line)==0:
-            print("Time Line Not set. Rending for t=",t)
-            self.t_line=np.array([t])
-            self.set_all_colors(redshift=redshift)
-
-        #Aquire the flux array
-        for name,arr in zip(self.colnames,self.fluxes):
-            if name==colname:
-                fluxarray=arr
-                break
-
-
-        #Reading time to get fluxes
-        if t in self.t_line:
-            #Read Direct
-            for tl,fluxrow in zip(self.t_line, fluxarray):
-                if tl==t:
-                    return(fluxrow)
-
-        elif t>min(self.t_line) and t<max(self.t_line):
-            #Linearly Interpolate
-            i2=np.argmax(self.t_line>t)
-            i1=i2-1
-
-            return(fluxarray[:,i1]+(t-self.t_line[i1])/(self.t_line[i2]-self.t_line[i1])*(fluxarray[:,i2]-fluxarray[:,i1]))
-
-        else:
-            print("Possible time-domain error on flux get. Returning Zero Flux")
-            return( np.zeros([len( self.ra )]) )
-
-    def set_color(self, colname, redshift=True):
-        #Use self.t_line to generate color array
-
-        #Get the array you're working with:
-        for name, index in zip(self.colnames, np.arange( len(self.colnames) )):
-            if name==colname:
-                fluxarray = self.fluxes[index]
-                print("Setting Supernovae Colours for ",name)
-                break
-
-        #Make array empty and correct shape
-        self.fluxes[index]=np.zeros([len(self.t_line),len(self.ra)])
-
-        model = snc.Model(source='salt2')
-
-        #Get band filter name to work with sncosmo
+        # Get band filter name to work with sncosmo
         bands = ["bessellr", "bessellv", "bessellb", "besselli", "bessellux"]
-        for bn,cn in zip(bands,self.colnames):
-            if colname==cn:
-                bandname=bn
-                break
 
-        N=len(self.t_line)
+        colours = []
+        for x0, x1, c, t, z in zip(self.x0s, self.x1s, self.cs, self.ts, self.z):
+            if not redshift:
+                z = 0.05
+            # z = 0.05
+            model.set(z=z, t0=t, x0=x0, x1=x1, c=c)
+            fluxes = []
+            for b in bands:
+                try:
+                    flux = model.bandflux(b, time)
+                except ValueError:
+                    flux = 0
+                fluxes.append(flux)
+            colour = self.get_color_from_bands(fluxes, style)
+            colours.append(colour)
+        colours = np.array(colours)
+        # Now get alphas
+        length_peak = 80
+        min_t = -40
+        diff = time - self.ts
+        alphas = []
+        for d in diff:
+            if d < min_t:
+                alphas.append(0)
+            elif d < length_peak:
+                alphas.append(1)
+            else:
+                alphas.append(np.exp(-(d - length_peak) / 30))
 
-        band = [bandname] * N
-        gain = [1] * N
-        skynoise = [0] * N
-        zp = [0] * N
-        zpsys = ['ab'] * N
+        alphas = np.array(alphas) / np.sqrt(layers)
+        rgba = np.hstack((colours, alphas[:, None]))
+        return rgba
 
-        obs = table({'time': self.t_line,
-                     'band': band,
-                     'gain': gain,
-                     'skynoise': skynoise,
-                     'zp': zp,
-                     'zpsys': zpsys})
+    def get_color_from_bands(self, fluxes, style):
+        vr, vg, vb, ir, uv = tuple(fluxes)
 
-        #Itterate over each supernovae and get the light curve
+        if style == 'rgb':
+            r = vr
+            g = vg
+            b = vb
+        elif style == 'ivu1':
+            r = ir
+            g = vg
+            b = uv
+        elif style == 'ivu2':
+            r = ir
+            g = (vb + vg + vr) / 3
+            b = uv / 2
+        elif style == 'ivu3':
+            r = vg / 2 + vr + ir
+            g = vb / 2 + vg + 2 / 3 * vr
+            b = ir + vb + 1 / 2 * uv
+        elif style == 'rbslide':
+            r = ir + (vr + vg + vb) / 2
+            g = (vr + vg + vb) / 2
+            b = (vr + vg + vb) / 2 + uv
+        elif style == 'rbslide2':
+            r = ir + vr + (vr + vg + vb) / 2
+            g = (vr + vg + vb) / 2
+            b = (vr + vg + vb) / 2 + vb + uv
 
-        for i,zi,tsi,x0i,x1i,ci, in zip(np.arange(len(self.z)), self.z, self.ts, self.x0, self.xs, self.color):
+        rgb = np.array([r, g, b])  # Flux Array
+        rgb += 0.2 * np.max(rgb)
+        rgb *= rgb > 0
+        rgb /= np.max(rgb)
+        return rgb
 
-            if redshift==False:
-                zi=0
-
-            params = {'z': zi, 't0': tsi, 'x0': x0i, 'x1': x1i, 'c': ci}
-            try:
-                lcs = snc.realize_lcs(obs, model, [params], scatter=False)
-                fcol=np.array(lcs[0]["flux"])
-            except:
-                fcol=np.zeros([len(self.t_line)])
-
-            self.fluxes[index][:,i]=fcol
-
-    def set_all_colors(self, redshift=True):
-        for name in self.colnames:
-            self.set_color(name, redshift=redshift)
+    def get_size(self, time):
+        diff = time - self.ts
+        t0_size = 10
+        size = (diff < 0) * np.exp(diff / 10)
+        size += (diff > 0) * (1 + diff * 0.1)
+        return t0_size * size
 
 
+class RandomSupernovae(SupernovaeSurvey):
+    def __init__(self, n=500):
+
+        z = np.random.uniform(0.1, 1.0, n)
+        ra = np.random.uniform(0, 2 * np.pi, n)
+        dec = np.random.uniform(-np.pi / 2, np.pi / 2, n)
+        ts = np.random.uniform(5000, 5500, n)
+
+        mb = np.random.normal(20, 1, n)  # This universe has some odd cosmology
+        x1 = np.random.normal(0, 0.8, n)
+        c = np.random.normal(0, 0.1, n)
+
+        super().__init__(ra, dec, z, ts, mb, x1, c)
 
 
-class Dummy(Survey):
+class OzDESSupernovae(SupernovaeSurvey):
+    def __init__(self):
+        data = np.load("surveyvis/data/supernovae.npy")
+
+        ra = data[:, 0] * np.pi / 180
+        dec = data[:, 1] * np.pi / 180
+        z = data[:, 2]
+
+        ts = data[:, 3]
+        mb = data[:, 4]
+        x1 = data[:, 5]
+        c = data[:, 6]
+
+        super().__init__(ra, dec, z, ts, mb, x1, c)
+
+
+class Dummy(StaticSurvey):
     def __init__(self):
         """
         A dummy survey that has points uniformly distributed on the southern hemisphere.
@@ -187,7 +187,7 @@ class Dummy(Survey):
         self.size = 5.0
 
 
-class Dummy2(Survey):
+class Dummy2(StaticSurvey):
     def __init__(self):
         """
         A dummy survey that has points uniformly distributed on the southern hemisphere, but at
@@ -203,7 +203,7 @@ class Dummy2(Survey):
         self.size = 3.0
 
 
-class WiggleZ(Survey):
+class WiggleZ(StaticSurvey):
     def __init__(self):
         """
         The WiggleZ survey. Data is stored in an (n x 3) matrix as a file, with the columns being
@@ -214,7 +214,7 @@ class WiggleZ(Survey):
         super().__init__(data[:, 0] * np.pi / 180, data[:, 1] * np.pi / 180, data[:, 2], zmax=1.0)
 
 
-class TwoDegreeField(Survey):
+class TwoDegreeField(StaticSurvey):
     def __init__(self):
         data = np.load("surveyvis/data/2df.npy")
         super().__init__(data[:, 0] * np.pi / 180, data[:, 1] * np.pi / 180, data[:, 2], zmax=0.3)
@@ -223,7 +223,7 @@ class TwoDegreeField(Survey):
         self.size = 1.0
 
 
-class Gama(Survey):
+class Gama(StaticSurvey):
     def __init__(self):
         data = np.load("surveyvis/data/gama.npy")
         super().__init__(data[:, 0] * np.pi / 180, data[:, 1] * np.pi / 180, data[:, 2], zmax=0.5)
@@ -232,7 +232,7 @@ class Gama(Survey):
         self.alpha = 0.2
 
 
-class SDSS(Survey):
+class SDSS(StaticSurvey):
     def __init__(self):
         data = np.load("surveyvis/data/sdss.npy")
         super().__init__(data[:, 0] * np.pi / 180, data[:, 1] * np.pi / 180, data[:, 2], zmax=0.2)
@@ -241,14 +241,14 @@ class SDSS(Survey):
         self.alpha = 0.2
 
 
-class SixDegreefField(Survey):
+class SixDegreefField(StaticSurvey):
     def __init__(self):
         data = np.load("surveyvis/data/6df.npy")
         super().__init__(data[:, 0] * np.pi / 180, data[:, 1] * np.pi / 180, data[:, 2], zmax=0.15)
         self.color = "#e2a329"
 
 
-class OzDES(Survey):
+class OzDES(StaticSurvey):
     def __init__(self):
         data = np.load("surveyvis/data/ozdes.npy")
         super().__init__(data[:, 0] * np.pi / 180, data[:, 1] * np.pi / 180, data[:, 2], zmax=1.6)
@@ -257,13 +257,13 @@ class OzDES(Survey):
         self.color = "#da6016"
 
 
-class Tdflens(Survey):
+class Tdflens(StaticSurvey):
     def __init__(self):
         data = np.load("surveyvis/data/tdflens.npy")
         super().__init__(data[:, 0] * np.pi / 180, data[:, 1] * np.pi / 180, data[:, 2], zmax=1.0)
 
 
-class Taipan(Survey):
+class Taipan(StaticSurvey):
     def __init__(self):
         data = np.load("surveyvis/data/taipan.npy")
         super().__init__(data[:, 0] * np.pi / 180, data[:, 1] * np.pi / 180, data[:, 2], zmax=0.2)
