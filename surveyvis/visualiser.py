@@ -6,6 +6,7 @@ import numpy as np
 from scipy.ndimage.filters import gaussian_filter
 from scipy.misc import imresize
 from surveyvis.surveys import SupernovaeSurvey
+from surveyvis.camera import Camera
 
 
 class Visualisation(object):
@@ -16,6 +17,7 @@ class Visualisation(object):
         """
 
         self.surveys = []  # A list of all surveys to plot
+        self.camera = None
 
         # Various background colours for our figures and axes
         self.plot_background_color = (0, 0, 0, 0)
@@ -41,8 +43,11 @@ class Visualisation(object):
         """
         self.surveys.append(survey)
 
-    def render3d(self, filename, rmax=None, elev=60, azim=70, layers=20, time=0, low_quality=False, blur=True,
-                 falsecolor='rgb', contrast=1, redshift=True):
+    def set_camera(self, camera):
+        assert isinstance(camera, Camera), "This is not a camera!"
+        self.camera = camera
+
+    def render3d(self, filename, ratio, low_quality=False):
 
         """
         Render a 3D still to file
@@ -51,35 +56,27 @@ class Visualisation(object):
         ----------
         filename : str
             The filename to save the plot to
-        rmax : float [optional]
-            The limits of the plot. Camera distance, etc.
-        elev : int|float [optional]
-            The camera elevation
-        azim : int|float [optional]
-            Azimuth angle for the camera
-        layers : int [optional]
-            How many layers to render to get additive blending working. Higher number
-            gives better results (to a point), but is slower.
         """
+        image_ratio = 1920.0 / 1080.0
+
+        azim, elev, rmax = self.camera.get_azim_elevation_radius(ratio)
+
+
+        time_bounds = np.array([s.get_time_range() for s in self.surveys if isinstance(s, SupernovaeSurvey)])
+        t_min, t_max = np.min(time_bounds), np.max(time_bounds)
+        time = t_min + (t_max - t_min) * ratio
 
         if low_quality:
             print("Making low quality")
-            size = (4, 4)
-            finsize = (4, 5.625 * 2 / 5)
+            s_size = 4
             layers = 2
         else:
             print("Making high quality")
-            size = (10, 10)
-            finsize = (10, 5.625)
+            s_size = 10
 
-        if blur:
-            print("Blur Enabled")
-        else:
-            print("Blur Disabled")
-
-        # If no rmax specified, estimate one
-        if rmax is None:
-            rmax = 0.4 * max([s.zmax for s in self.surveys])
+        size = (s_size, s_size)
+        pixel_height = 192 * s_size / image_ratio
+        finsize = (s_size, s_size / image_ratio)
 
         # Create a figure
         fig = plt.figure(figsize=size, dpi=192, facecolor=self.plot_background_color, frameon=False)
@@ -125,7 +122,7 @@ class Visualisation(object):
             for s in self.surveys:
                 if isinstance(s, SupernovaeSurvey):
                     ratio_i = ((i + 1) / layers) ** 2
-                    colors = s.get_colors(time, redshift=redshift, layers=layers)
+                    colors = s.get_colors(time, layers=layers)
                     size = s.get_size(time)
                     ax.scatter(s.xs, s.ys, s.zs, lw=0, s=size * ratio_i, c=colors)
 
@@ -141,48 +138,19 @@ class Visualisation(object):
         for img in imgs:
             img[img[:, :, -1] == 0] = 0
             first += img
-            if blur == True:
-                stacked += img
+            stacked += img
 
-        # Clip the values between 0 and 255 so we can turn back to 8bits
+        if not low_quality:
+            first = self._blur(first, stacked)
+
+        # And reclip
         first = np.clip(first, 0, 255)
-        stacked = np.clip(stacked, 0, 255)
-
-        if blur == True:
-            # Resize stacked so it is 25% of its original size, because this step is *slow*
-            stacked = imresize(stacked, 25)
-            # Run a gaussian filter of the layer to blur it, to simulate glow of some sort. Blue R, G, B, alpha individually
-            smoothed = np.dstack(
-                [gaussian_filter(stacked[:, :, i], sigma=4, truncate=3) for i in range(stacked.shape[2])])
-            # Now blur the colours togeter
-            s2 = gaussian_filter(stacked, sigma=10, truncate=3)
-            # Modify blur ratios (non-colour blur to colour blur)
-            add = np.floor(0.5 * smoothed + s2)
-            # Scale it back up to size
-            add = imresize(add, 400)
-            # Reclip it and decrease intensity to 40%
-            add = np.clip(add * 0.4, 0, 255)
-            # Turn it back to int16 so we can add it (gaussian_filter makes it all doubles)
-            add = add.astype(np.int16)
-            # Mask out 0 alpha values
-            add[add[:, :, -1] == 0] = 0
-
-            # Finally, add in our glow
-            first += add
-
-            # And reclip
-            first = np.clip(first, 0, 255)
-
         # Turn it back to 8bits
         first = first.astype(np.uint8)
 
         # Crop out the top and bottom so we get the right aspect ratio for our video
-        if low_quality:
-            i1 = w // 2 - int(1080 * 2 / 5) // 2
-            i2 = w // 2 + int(1080 * 2 / 5) // 2
-        else:
-            i1 = w // 2 - 1080 // 2
-            i2 = w // 2 + 1080 // 2
+        i1 = w // 2 - pixel_height // 2
+        i2 = w // 2 + pixel_height // 2
         first = first[i1:i2, :, :]
 
         # Create a new plot, where we will plot our final image, which is called "first"
@@ -195,6 +163,33 @@ class Visualisation(object):
         # Save this out to file.
         fig.savefig(filename, dpi=192, bbox_inches=extent, pad_inches=0, transparent=True)
         print("Saved to %s" % filename)
+
+    def _blur(self, first, stacked):
+        # Clip the values between 0 and 255 so we can turn back to 8bits
+        first = np.clip(first, 0, 255)
+        stacked = np.clip(stacked, 0, 255)
+
+        # Resize stacked so it is 25% of its original size, because this step is *slow*
+        stacked = imresize(stacked, 25)
+        # Run a gaussian filter of the layer to blur it, to simulate glow of some sort. Blue R, G, B, alpha individually
+        smoothed = np.dstack(
+            [gaussian_filter(stacked[:, :, i], sigma=4, truncate=3) for i in range(stacked.shape[2])])
+        # Now blur the colours togeter
+        s2 = gaussian_filter(stacked, sigma=10, truncate=3)
+        # Modify blur ratios (non-colour blur to colour blur)
+        add = np.floor(0.5 * smoothed + s2)
+        # Scale it back up to size
+        add = imresize(add, 400)
+        # Reclip it and decrease intensity to 40%
+        add = np.clip(add * 0.4, 0, 255)
+        # Turn it back to int16 so we can add it (gaussian_filter makes it all doubles)
+        add = add.astype(np.int16)
+        # Mask out 0 alpha values
+        add[add[:, :, -1] == 0] = 0
+
+        # Finally, add in our glow
+        first += add
+        return first
 
     def render_latex(self, filename, grid=True, grid_color="#333333", theta_color="#111111", outline=True, dpi=600):
         """

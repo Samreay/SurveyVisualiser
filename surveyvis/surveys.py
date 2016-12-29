@@ -47,7 +47,7 @@ class SupernovaeSurvey(Survey):
     The class that contains supernovae
     """
 
-    def __init__(self, ra, dec, z, ts, mb, x1, c, zmax=None):
+    def __init__(self, ra, dec, z, ts, mb, x1, c, zmax=None, redshift=False):
 
         super().__init__(ra, dec, z, zmax=zmax)
 
@@ -55,11 +55,15 @@ class SupernovaeSurvey(Survey):
         self.x1s = x1
         self.mbs = mb
         self.cs = c
+        self.redshift = redshift
 
         x0 = np.exp(-0.9209 * mb + 9.7921)  # Note that we dont show varying mB this is mostly just for sncosmo
         self.x0s = x0
 
-    def get_colors(self, time, style="ivu2", redshift=True, layers=1):
+    def get_time_range(self):
+        return np.min(self.ts) - 50, np.max(self.ts) + 100
+
+    def get_colors(self, time, style="ivu2", layers=1):
         import sncosmo
         model = sncosmo.Model(source='salt2')
 
@@ -68,7 +72,7 @@ class SupernovaeSurvey(Survey):
 
         colours = []
         for x0, x1, c, t, z in zip(self.x0s, self.x1s, self.cs, self.ts, self.z):
-            if not redshift:
+            if not self.redshift:
                 z = 0.05
             # z = 0.05
             model.set(z=z, t0=t, x0=x0, x1=x1, c=c)
@@ -83,8 +87,8 @@ class SupernovaeSurvey(Survey):
             colours.append(colour)
         colours = np.array(colours)
         # Now get alphas
-        length_peak = 80
-        min_t = -40
+        length_peak = 30
+        min_t = -30
         diff = time - self.ts
         alphas = []
         for d in diff:
@@ -93,7 +97,7 @@ class SupernovaeSurvey(Survey):
             elif d < length_peak:
                 alphas.append(1)
             else:
-                alphas.append(np.exp(-(d - length_peak) / 30))
+                alphas.append(np.exp(-(d - length_peak) / 20))
 
         alphas = np.array(alphas) / np.sqrt(layers)
         rgba = np.hstack((colours, alphas[:, None]))

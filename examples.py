@@ -1,13 +1,13 @@
+from surveyvis.camera import OrbitZoomCamera
 from surveyvis.surveys import WiggleZ, TwoDegreeField, Gama, SDSS, SixDegreefField, Dummy, Dummy2, OzDES, Tdflens, \
-    Taipan, RandomSupernovae, OzDESSupernovae
+    Taipan, RandomSupernovae, OzDESSupernovae, SupernovaeSurvey
 from surveyvis.visualiser import Visualisation
 import numpy as np
 from joblib import Parallel, delayed
 import os
 
 
-def make3d(name, vis, i, maxr, minr, low_quality=False, t=0, blur=True, contrast=1,
-           falsecolor='rgb', redshift=True):
+def make3d(name, vis, i, i_max, low_quality=False):
     """
      Outputs a PNG image of the surveys visualised at a
      calculated camera position
@@ -27,18 +27,12 @@ def make3d(name, vis, i, maxr, minr, low_quality=False, t=0, blur=True, contrast
     """
     name = "output/%s" % name
 
-    rad = i * np.pi / 180
-    elev = -(30 + 30 * np.cos(rad))
-    d = min(np.abs(200 - i), np.abs(360 + i - 200))
-    r = maxr - (maxr - minr) * (1 - np.exp(-(d / 140) ** 2))
     if not os.path.exists(name):
         os.makedirs(name)
-    vis.render3d("%s/3d_%d.png" % (name, i), rmax=r, elev=elev, azim=i, low_quality=low_quality, time=t,
-                 blur=blur, contrast=contrast, falsecolor=falsecolor, redshift=redshift)
+    vis.render3d("%s/3d_%d.png" % (name, i), 1.0 * i / i_max, low_quality=low_quality)
 
 
-def make_video(name, data, low_quality=False, no_frames=360, blur=True, tlist=None, contrast=1,
-               falsecolor='rgb', redshift=True):
+def make_video(name, data, low_quality=False, num_frames=360):
     """
     Render out all the still frames needed to make a video for the given data
 
@@ -66,6 +60,9 @@ def make_video(name, data, low_quality=False, no_frames=360, blur=True, tlist=No
     else:
         vis.add_survey(data)
 
+    has_supernova = len([s for s in vis.surveys if isinstance(s, SupernovaeSurvey)]) > 0
+    num_turns = 1 if not has_supernova else 2
+
     # Get the redshift limits for each survey
     rs = [s.zmax for s in vis.surveys]
 
@@ -77,14 +74,10 @@ def make_video(name, data, low_quality=False, no_frames=360, blur=True, tlist=No
         maxr = 0.7 * max(rs)
         minr = 0.7 * min(rs)
 
-    # Using 4 cores, call make3d for each degree from 0 to 360
-    ilist = np.linspace(0, 360, no_frames, endpoint=False)
-    if tlist is None:
-        tlist = ilist
+    vis.set_camera(OrbitZoomCamera(minr, maxr, num_turns=num_turns))
 
-    Parallel(n_jobs=4)(
-        delayed(make3d)(name, vis, int(i), minr, maxr, low_quality, t, blur, contrast, falsecolor,
-                        redshift) for i, t in zip(ilist, tlist))
+    # Using 4 cores, call make3d for each degree from 0 to 360
+    Parallel(n_jobs=4)(delayed(make3d)(name, vis, i, num_frames, low_quality) for i in range(num_frames))
 
 
 def make(name, data):
@@ -157,7 +150,7 @@ def get_permutations(full_data=True):
     return groups, names
 
 
-def make_figures(name=None, blur=True):
+def make_figures(name=None):
     """
     Makes all 2D figures for all permutations of data that I want
 
@@ -173,8 +166,7 @@ def make_figures(name=None, blur=True):
     Parallel(n_jobs=4)(delayed(make)(n + ".png", g) for n, g in zip(names, groups) if name is None or name == n)
 
 
-def make_all_video(name=None, low_quality=False, no_frames=360, blur=True, tlist=None, contrast=1,
-                   falsecolor='rgb', redshift=True):
+def make_all_video(name=None, low_quality=False, num_frames=360):
     """
     Makes all video series for all permutations of data that I want
 
@@ -191,8 +183,7 @@ def make_all_video(name=None, low_quality=False, no_frames=360, blur=True, tlist
     groups, names = get_permutations()
     for n, g in zip(names, groups):
         if name is None or name == n:
-            make_video(n, g, low_quality=low_quality, no_frames=no_frames, blur=blur,
-                       tlist=tlist, contrast=contrast, falsecolor=falsecolor, redshift=redshift)
+            make_video(n, g, low_quality=low_quality, num_frames=num_frames)
 
 
 if __name__ == "__main__":
@@ -202,10 +193,8 @@ if __name__ == "__main__":
 
     # As an example, make the 6df figures and video
     # make_figures("6df")
-    noframes = 50
-    tlist = np.linspace(5000, 5500, noframes, endpoint=False)
-    make_all_video("nova", low_quality=True, no_frames=noframes, blur=False, tlist=tlist,
-                   contrast=2, falsecolor='rgb', redshift=True)
+    num_frames = 50
+    make_all_video("nova", low_quality=True, num_frames=num_frames)
 
 
     # Uncomment one of the below lines (and comment out the above two)
