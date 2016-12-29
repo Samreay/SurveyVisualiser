@@ -24,5 +24,4 @@ class OrbitZoomCamera(Camera):
         elev = -(30 + 30 * np.cos(rad))
         d = min(np.abs(self.zoom_loc - azim), np.abs(2 * np.pi + azim - self.zoom_loc))
         radius = self.max_radius - (self.max_radius - self.min_radius) * (1 - np.exp(-(d / self.zoom_width) ** 2))
-        print(azim, elev)
         return azim, elev, radius

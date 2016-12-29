@@ -63,6 +63,8 @@ def make_video(name, data, low_quality=False, num_frames=360):
     has_supernova = len([s for s in vis.surveys if isinstance(s, SupernovaeSurvey)]) > 0
     num_turns = 1 if not has_supernova else 2
 
+    num_frames *= num_turns  # Atm extending running time if more turns. May remove
+
     # Get the redshift limits for each survey
     rs = [s.zmax for s in vis.surveys]
 
@@ -138,9 +140,9 @@ def get_permutations(full_data=True):
         p = Taipan()
         rs = RandomSupernovae()
         # ozs = OzDESSupernovae()
-        groups = [[w, t, s, g, x, o], [w, t, s, g, x], w, t, g, s, x, o, l, [l, o2, t], p, [l, t, o3], rs]
+        groups = [[w, t, s, g, x, o], [w, t, s, g, x], w, t, g, s, x, o, l, [l, o2, t], p, [l, t, o3]]
         names = ["all", "all_nooz", "wigglez", "2df", "gama", "sdss", "6df", "ozdes", "2dflens", "sub", "taipan",
-                 "ozdes_deep", "nova"]
+                 "ozdes_deep"]
     else:
         t = TwoDegreeField()
         s = SDSS()
@@ -189,12 +191,12 @@ def make_all_video(name=None, low_quality=False, num_frames=360):
 if __name__ == "__main__":
     # Uncomment the below two lines to do everything
     # make_figures()
-    # make_all_video()
+    make_all_video()
 
     # As an example, make the 6df figures and video
     # make_figures("6df")
-    num_frames = 50
-    make_all_video("nova", low_quality=True, num_frames=num_frames)
+    # num_frames = 360
+    # make_all_video("test_nova", low_quality=True, num_frames=num_frames)
 
 
     # Uncomment one of the below lines (and comment out the above two)

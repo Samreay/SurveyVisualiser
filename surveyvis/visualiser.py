@@ -61,7 +61,6 @@ class Visualisation(object):
 
         azim, elev, rmax = self.camera.get_azim_elevation_radius(ratio)
 
-
         time_bounds = np.array([s.get_time_range() for s in self.surveys if isinstance(s, SupernovaeSurvey)])
         t_min, t_max = np.min(time_bounds), np.max(time_bounds)
         time = t_min + (t_max - t_min) * ratio
@@ -73,36 +72,20 @@ class Visualisation(object):
         else:
             print("Making high quality")
             s_size = 10
+            layers = 10
 
         size = (s_size, s_size)
         pixel_height = 192 * s_size / image_ratio
         finsize = (s_size, s_size / image_ratio)
 
         # Create a figure
-        fig = plt.figure(figsize=size, dpi=192, facecolor=self.plot_background_color, frameon=False)
-        ax = fig.add_subplot(111, projection='3d', axisbg=self.axis_background_color)
-
-        # Set background colours and screw around with things
-        plt.gca().patch.set_facecolor((0, 0, 0, 0))
-        ax.set_axis_off()
-        fig.subplots_adjust(0, 0, 1, 1)
-        ax.w_xaxis.set_pane_color(self.axis_background_color)
-        ax.w_yaxis.set_pane_color(self.axis_background_color)
-        ax.w_zaxis.set_pane_color(self.axis_background_color)
-
-        # Set viewing limits and camera
-        ax.view_init(elev=elev, azim=azim)
-        ax.set_xlim(-rmax, rmax)
-        ax.set_ylim(-rmax, rmax)
-        ax.set_zlim(-rmax, rmax)
-        ax.set_aspect("equal")
+        ax, fig = self._get_3d_fig(azim, elev, rmax, size)
 
         # Draw the background
         fig.canvas.draw()
 
         # Steal the RGB canvas from matplotlib, and turn it to int16 so we dont overflow
         w, h = fig.canvas.get_width_height()
-        fig.canvas.draw()
         first = np.frombuffer(fig.canvas.buffer_rgba(), np.uint8).astype(np.int16).reshape(h, w, -1).copy()
         first[first[:, :, -1] == 0] = 0  # If alpha = 0, throw out colour data
         stacked = np.zeros(first.shape)
@@ -111,17 +94,12 @@ class Visualisation(object):
         imgs = []
         for i in range(layers):
             # Reset the axis (clear previous layer)
-            ax.clear()
-            ax.set_axis_off()
-            ax.set_aspect("equal")
-            ax.set_xlim(-rmax, rmax)
-            ax.set_ylim(-rmax, rmax)
-            ax.set_zlim(-rmax, rmax)
+            self._reset_axis(ax, rmax)
 
             # Plot each survey
             for s in self.surveys:
                 if isinstance(s, SupernovaeSurvey):
-                    ratio_i = ((i + 1) / layers) ** 2
+                    ratio_i = max(0.01, ((i + 1) / layers) ** 3)
                     colors = s.get_colors(time, layers=layers)
                     size = s.get_size(time)
                     ax.scatter(s.xs, s.ys, s.zs, lw=0, s=size * ratio_i, c=colors)
@@ -149,20 +127,48 @@ class Visualisation(object):
         first = first.astype(np.uint8)
 
         # Crop out the top and bottom so we get the right aspect ratio for our video
-        i1 = w // 2 - pixel_height // 2
-        i2 = w // 2 + pixel_height // 2
+        i1 = int(w // 2 - pixel_height // 2)
+        i2 = int(w // 2 + pixel_height // 2)
         first = first[i1:i2, :, :]
 
         # Create a new plot, where we will plot our final image, which is called "first"
+        self._render_final_layer(filename, finsize, first)
+
+    def _reset_axis(self, ax, rmax):
+        ax.clear()
+        ax.set_axis_off()
+        ax.set_aspect("equal")
+        ax.set_xlim(-rmax, rmax)
+        ax.set_ylim(-rmax, rmax)
+        ax.set_zlim(-rmax, rmax)
+
+    def _render_final_layer(self, filename, finsize, first):
         fig, ax = plt.subplots(figsize=finsize, dpi=192, frameon=False)
         plt.axis("off")
         fig.subplots_adjust(0, 0, 1, 1)
         ax.imshow(first, aspect='auto')
         extent = ax.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
-
         # Save this out to file.
         fig.savefig(filename, dpi=192, bbox_inches=extent, pad_inches=0, transparent=True)
         print("Saved to %s" % filename)
+
+    def _get_3d_fig(self, azim, elev, rmax, size):
+        fig = plt.figure(figsize=size, dpi=192, facecolor=self.plot_background_color, frameon=False)
+        ax = fig.add_subplot(111, projection='3d', axisbg=self.axis_background_color)
+        # Set background colours and screw around with things
+        plt.gca().patch.set_facecolor((0, 0, 0, 0))
+        ax.set_axis_off()
+        fig.subplots_adjust(0, 0, 1, 1)
+        ax.w_xaxis.set_pane_color(self.axis_background_color)
+        ax.w_yaxis.set_pane_color(self.axis_background_color)
+        ax.w_zaxis.set_pane_color(self.axis_background_color)
+        # Set viewing limits and camera
+        ax.view_init(elev=elev, azim=azim)
+        ax.set_xlim(-rmax, rmax)
+        ax.set_ylim(-rmax, rmax)
+        ax.set_zlim(-rmax, rmax)
+        ax.set_aspect("equal")
+        return ax, fig
 
     def _blur(self, first, stacked):
         # Clip the values between 0 and 255 so we can turn back to 8bits

@@ -34,7 +34,7 @@ class Survey(object):
         # Some plotting values you can override. Scatter size, alpha and colour.
         self.size = 1.0
         self.alpha = 0.5
-        self.cs = "#1E3B9C"
+        self.color = "#1E3B9C"
 
 
 class StaticSurvey(Survey):
@@ -63,7 +63,7 @@ class SupernovaeSurvey(Survey):
     def get_time_range(self):
         return np.min(self.ts) - 50, np.max(self.ts) + 100
 
-    def get_colors(self, time, style="ivu2", layers=1):
+    def get_colors(self, time, style="ivu3", layers=1):
         import sncosmo
         model = sncosmo.Model(source='salt2')
 
@@ -73,7 +73,7 @@ class SupernovaeSurvey(Survey):
         colours = []
         for x0, x1, c, t, z in zip(self.x0s, self.x1s, self.cs, self.ts, self.z):
             if not self.redshift:
-                z = 0.05
+                z = 0.2
             # z = 0.05
             model.set(z=z, t0=t, x0=x0, x1=x1, c=c)
             fluxes = []
@@ -134,7 +134,8 @@ class SupernovaeSurvey(Survey):
         rgb = np.array([r, g, b])  # Flux Array
         rgb += 0.2 * np.max(rgb)
         rgb *= rgb > 0
-        rgb /= np.max(rgb)
+        if not np.max(rgb) == 0:
+            rgb /= np.max(rgb)
         return rgb
 
     def get_size(self, time):
