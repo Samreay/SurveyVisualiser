@@ -79,8 +79,7 @@ def make_video(name, data, low_quality=False, num_frames=360):
     vis.set_camera(OrbitZoomCamera(minr, maxr, num_turns=num_turns))
 
     # Using 4 cores, call make3d for each degree from 0 to 360
-    # Parallel(n_jobs=3)(delayed(make3d)(name, vis, i, num_frames, low_quality) for i in range(num_frames))
-    Parallel(n_jobs=3)(delayed(make3d)(name, vis, i, num_frames, low_quality) for i in [0, 359])
+    Parallel(n_jobs=3)(delayed(make3d)(name, vis, i, num_frames, low_quality) for i in range(num_frames))
 
 
 def make(name, data):
@@ -141,8 +140,8 @@ def get_permutations(full_data=True):
         p = Taipan()
         rs = RandomSupernovae()
         ozs = OzDESSupernovae()
-        groups = [[w, t, s, g, x, o], [w, t, s, g, x], w, t, g, s, x, o, l, [l, o2, t], p, [l, t, o3], [o2, ozs]]
-        names = ["all", "all_nooz", "wigglez", "2df", "gama", "sdss", "6df", "ozdes", "2dflens", "sub", "taipan",
+        groups = [[w, t, s, g, x, o], [w, t, s, g, x], [w, t, s, g, x, o, ozs], w, t, g, s, x, o, l, [l, o2, t], p, [l, t, o3], [o2, ozs]]
+        names = ["all", "all_nooz", "all_supernova", "wigglez", "2df", "gama", "sdss", "6df", "ozdes", "2dflens", "sub", "taipan",
                  "ozdes_deep", "ozdes_nova"]
     else:
         t = TwoDegreeField()
