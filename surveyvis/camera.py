@@ -10,7 +10,7 @@ class Camera(metaclass=ABCMeta):
 
 
 class OrbitZoomCamera(Camera):
-    def __init__(self, min_radius, max_radius, num_turns=1, zoom_loc=200, zoom_width=120):
+    def __init__(self, min_radius, max_radius, num_turns=1, zoom_loc=200, zoom_width=150):
         self.num_turns = num_turns
         self.zoom_loc = zoom_loc
         self.min_radius = min_radius

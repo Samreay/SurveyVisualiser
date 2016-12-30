@@ -79,7 +79,8 @@ def make_video(name, data, low_quality=False, num_frames=360):
     vis.set_camera(OrbitZoomCamera(minr, maxr, num_turns=num_turns))
 
     # Using 4 cores, call make3d for each degree from 0 to 360
-    Parallel(n_jobs=3)(delayed(make3d)(name, vis, i, num_frames, low_quality) for i in range(num_frames))
+    # Parallel(n_jobs=3)(delayed(make3d)(name, vis, i, num_frames, low_quality) for i in range(num_frames))
+    Parallel(n_jobs=3)(delayed(make3d)(name, vis, i, num_frames, low_quality) for i in [0, 359])
 
 
 def make(name, data):
@@ -191,7 +192,7 @@ def make_all_video(name=None, low_quality=False, num_frames=360):
 if __name__ == "__main__":
     # Uncomment the below two lines to do everything
     # make_figures()
-    make_all_video("ozdes_nova")
+    make_all_video()
 
     # As an example, make the 6df figures and video
     # make_figures("6df")
