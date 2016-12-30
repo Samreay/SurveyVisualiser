@@ -120,7 +120,7 @@ def make(name, data):
     print("Made figure for %s" % name)
 
 
-def get_permutations(full_data=True):
+def get_permutations(full_data=False):
     """
     A helper function I call, that gives me a list of all the different plots I want
     to create with their data.
