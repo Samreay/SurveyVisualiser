@@ -6,7 +6,7 @@ import numpy as np
 from scipy.ndimage.filters import gaussian_filter
 from scipy.misc import imresize
 from surveyvis.surveys import SupernovaSurvey
-
+import gc
 
 class Visualisation(object):
     def __init__(self):
@@ -212,6 +212,9 @@ class Visualisation(object):
             # Render the plot and then steal the RGB buffer again
             fig.canvas.draw()
             imgs.append(np.frombuffer(fig.canvas.buffer_rgba(), np.uint8).astype(np.int16).reshape(h, w, -1).copy())
+        fig.clf()
+        plt.close()
+        gc.collect()
 
         # Stack all the images, so that we have two stacked layers, "first" and "stacked"
         for img in imgs:
@@ -269,6 +272,9 @@ class Visualisation(object):
 
         # Save this out to file.
         fig.savefig(filename, dpi=192, bbox_inches=extent, pad_inches=0, transparent=True)
+        fig.clf()
+        plt.close()
+        gc.collect()
         print("Saved to %s" % filename)
 
     def render_latex(self, filename, grid=True, grid_color="#333333", theta_color="#111111", outline=True, dpi=600):

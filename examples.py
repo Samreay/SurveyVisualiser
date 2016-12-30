@@ -46,7 +46,7 @@ def make3d(name, vis, i, maxr, minr, low_quality=False, t=0,  plotsupernovae=Fal
     r = maxr - (maxr - minr) * (1 - np.exp(-(d / 140) ** 2))
     if not os.path.exists(name):
         os.makedirs(name)
-    vis.render3d("%s/3d_%d_%d.png" % (name, i, t), rmax=r, elev=elev, azim=i, low_quality=low_quality, t=t, blur=blur, contrast=contrast, falsecolor=falsecolor, redshift=redshift)
+    vis.render3d("%s/3d_%d.png" % (name, i), rmax=r, elev=elev, azim=i, low_quality=low_quality, t=t, blur=blur, contrast=contrast, falsecolor=falsecolor, redshift=redshift)
 
 
 def make_video(name, data, low_quality=False,   no_frames=360, plotsupernovae=False, blur=True, tlist=np.array([]), contrast=1, falsecolor='rgb', redshift=True):
@@ -66,7 +66,7 @@ def make_video(name, data, low_quality=False,   no_frames=360, plotsupernovae=Fa
         A list of Surveys add to the Visualisation, or a single
         Survey if you only want one.
     """
-
+    print("Making video %s" % name)
     # Create an empty visualisation
     vis = Visualisation()
 
@@ -82,7 +82,6 @@ def make_video(name, data, low_quality=False,   no_frames=360, plotsupernovae=Fa
         supersurvey=SupernovaSurvey()
         supersurvey.t_line=tlist
         supersurvey.set_all_colors(redshift=redshift)
-
         vis.add_survey(supersurvey)
 
     # Get the redshift limits for each survey
@@ -97,9 +96,8 @@ def make_video(name, data, low_quality=False,   no_frames=360, plotsupernovae=Fa
         minr = 0.7 * min(rs)
 
     # Using 4 cores, call make3d for each degree from 0 to 360
-    ilist=np.linspace(0,            0,          no_frames, endpoint=False)
-
-    Parallel(n_jobs=1)(delayed(make3d)(name, vis, int(i), minr, maxr, low_quality, t, plotsupernovae, blur, contrast, falsecolor, redshift) for i,t in zip( ilist, tlist ))
+    ilist=list(range(no_frames))
+    Parallel(n_jobs=3)(delayed(make3d)(name, vis, int(i), minr, maxr, low_quality, t, plotsupernovae, blur, contrast, falsecolor, redshift) for i,t in zip( ilist, tlist ))
 
 
 def make(name, data):
@@ -140,7 +138,7 @@ def make(name, data):
     print("Made figure for %s" % name)
 
 
-def get_permutations(full_data=False):
+def get_permutations(full_data=True):
     """
     A helper function I call, that gives me a list of all the different plots I want
     to create with their data.
@@ -211,8 +209,8 @@ if __name__ == "__main__":
 
     # As an example, make the 6df figures and video
     #make_figures("6df")
-    noframes=64
-    tlist=np.round(np.linspace(56500,    58000,  noframes, endpoint=False),0)
+    noframes=360
+    tlist=np.round(np.linspace(56500,    57500,  noframes, endpoint=False),0)
     make_all_video("ozdes", low_quality=False, no_frames=noframes, plotsupernovae=True, blur=True, tlist=tlist, contrast=2, falsecolor='rgb', redshift=True)
 
 
