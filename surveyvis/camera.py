@@ -10,7 +10,7 @@ class Camera(metaclass=ABCMeta):
 
 
 class OrbitZoomCamera(Camera):
-    def __init__(self, min_radius, max_radius, num_turns=1, zoom_loc=200, zoom_width=140):
+    def __init__(self, min_radius, max_radius, num_turns=1, zoom_loc=200, zoom_width=120):
         self.num_turns = num_turns
         self.zoom_loc = zoom_loc
         self.min_radius = min_radius
@@ -22,6 +22,6 @@ class OrbitZoomCamera(Camera):
 
         azim = (180 / np.pi) * np.remainder(rad, 2 * np.pi)
         elev = -(30 + 30 * np.cos(rad))
-        d = min(np.abs(self.zoom_loc - azim), np.abs(2 * np.pi + azim - self.zoom_loc))
-        radius = self.max_radius - (self.max_radius - self.min_radius) * (1 - np.exp(-(d / self.zoom_width) ** 2))
+        d = min(np.abs(self.zoom_loc - azim), np.abs(360 + azim - self.zoom_loc))
+        radius = self.min_radius + (self.max_radius - self.min_radius) * (1 - np.exp(-(d / self.zoom_width) ** 2))
         return azim, elev, radius

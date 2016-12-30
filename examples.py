@@ -191,7 +191,7 @@ def make_all_video(name=None, low_quality=False, num_frames=360):
 if __name__ == "__main__":
     # Uncomment the below two lines to do everything
     # make_figures()
-    make_all_video()
+    make_all_video("all")
 
     # As an example, make the 6df figures and video
     # make_figures("6df")

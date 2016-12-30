@@ -62,7 +62,11 @@ class Visualisation(object):
         azim, elev, rmax = self.camera.get_azim_elevation_radius(ratio)
 
         time_bounds = np.array([s.get_time_range() for s in self.surveys if isinstance(s, SupernovaeSurvey)])
-        t_min, t_max = np.min(time_bounds), np.max(time_bounds)
+        if len(time_bounds) > 0:
+            t_min, t_max = np.min(time_bounds), np.max(time_bounds)
+        else:
+            t_min = 0
+            t_max = 1
         time = t_min + (t_max - t_min) * ratio
 
         if low_quality:
