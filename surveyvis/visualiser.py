@@ -7,7 +7,7 @@ from scipy.ndimage.filters import gaussian_filter
 from scipy.misc import imresize
 from surveyvis.surveys import SupernovaeSurvey
 from surveyvis.camera import Camera
-
+import gc
 
 class Visualisation(object):
     def __init__(self):
@@ -116,6 +116,10 @@ class Visualisation(object):
             fig.canvas.draw()
             imgs.append(np.frombuffer(fig.canvas.buffer_rgba(), np.uint8).astype(np.int16).reshape(h, w, -1).copy())
 
+        fig.clf()
+        plt.close()
+        gc.collect()
+
         # Stack all the images, so that we have two stacked layers, "first" and "stacked"
         for img in imgs:
             img[img[:, :, -1] == 0] = 0
@@ -154,6 +158,9 @@ class Visualisation(object):
         extent = ax.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
         # Save this out to file.
         fig.savefig(filename, dpi=192, bbox_inches=extent, pad_inches=0, transparent=True)
+        fig.clf()
+        plt.close()
+        gc.collect()
         print("Saved to %s" % filename)
 
     def _get_3d_fig(self, azim, elev, rmax, size):
