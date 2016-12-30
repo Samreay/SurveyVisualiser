@@ -168,7 +168,7 @@ def make_figures(name=None):
     Parallel(n_jobs=4)(delayed(make)(n + ".png", g) for n, g in zip(names, groups) if name is None or name == n)
 
 
-def make_all_video(name=None, low_quality=False, num_frames=360, full_data=False):
+def make_all_video(name=None, low_quality=False, num_frames=360):
     """
     Makes all video series for all permutations of data that I want
 
