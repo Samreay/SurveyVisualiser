@@ -1,5 +1,4 @@
 import numpy as np
-from astropy.table import Table as table
 
 
 class Survey(object):
