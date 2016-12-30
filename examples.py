@@ -168,7 +168,7 @@ def make_figures(name=None):
     Parallel(n_jobs=4)(delayed(make)(n + ".png", g) for n, g in zip(names, groups) if name is None or name == n)
 
 
-def make_all_video(name=None, low_quality=False, num_frames=360):
+def make_all_video(name=None, low_quality=False, num_frames=360, full_data=False):
     """
     Makes all video series for all permutations of data that I want
 
@@ -181,8 +181,15 @@ def make_all_video(name=None, low_quality=False, num_frames=360):
     """
     print("Making all videos")
 
+    # Some data I cant release to github unfortunately
+    full_data = os.path.exists("surveyvis/data/supernovae.npy")
+    if full_data:
+        print("Found full data")
+    else:
+        print("Found github data")
+
     # Note we dont use Parallel processing here, because make_video already uses it
-    groups, names = get_permutations()
+    groups, names = get_permutations(full_data=full_data)
     for n, g in zip(names, groups):
         if name is None or name == n:
             make_video(n, g, low_quality=low_quality, num_frames=num_frames)
