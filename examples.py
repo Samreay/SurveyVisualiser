@@ -202,9 +202,6 @@ if __name__ == "__main__":
 
     # As an example, make the 6df figures and video
     # make_figures("6df")
-    # num_frames = 360
-    # make_all_video("test_nova", low_quality=True, num_frames=num_frames)
-
 
     # Uncomment one of the below lines (and comment out the above two)
     # to make only the plot declared
@@ -215,3 +212,4 @@ if __name__ == "__main__":
     # make_figures("all")
     # make_all_video("6df")
     # make_figures("ozdes")
+    # make_all_video("all_supernova")
