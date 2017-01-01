@@ -76,7 +76,7 @@ class Visualisation(object):
         else:
             print("Making high quality")
             s_size = 10
-            layers = 10
+            layers = 20
 
         size = (s_size, s_size)
         pixel_height = 192 * s_size / image_ratio
