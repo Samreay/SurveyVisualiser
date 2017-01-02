@@ -212,4 +212,5 @@ if __name__ == "__main__":
     # make_figures("all")
     # make_all_video("6df")
     # make_figures("ozdes")
+    # make_all_video("ozdes_nova")
     # make_all_video("all_supernova")
