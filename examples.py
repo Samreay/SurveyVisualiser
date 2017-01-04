@@ -52,6 +52,12 @@ def make(name, data):
 
 def get_permutations():
     w = WiggleZ()
+    w125 = WiggleZ()
+    w125.zmax = 1.25
+    w150 = WiggleZ()
+    w150.zmax = 1.50
+    w200 = WiggleZ()
+    w200.zmax = 2.0
     t = TwoDegreeField()
     s = SDSS()
     g = Gama()
@@ -63,8 +69,8 @@ def get_permutations():
     o3.zmax = 4.0
     l = Tdflens()
     p = Taipan()
-    groups = [[w, t, s, g, x, o], [w, t, s, g, x], w, t, g, s, x, o, l, [l, o2, t], p, [l, t, o3], [w, t]]
-    names = ["all", "all_nooz", "wigglez", "2df", "gama", "sdss", "6df", "ozdes", "2dflens", "sub", "taipan", "ozdes_deep", "michael"]
+    groups = [[w, t, s, g, x, o], [w, t, s, g, x], w, t, g, s, x, o, l, [l, o2, t], p, [l, t, o3], [w, t], [w125, t], [w150, t], [w200, t]]
+    names = ["all", "all_nooz", "wigglez", "2df", "gama", "sdss", "6df", "ozdes", "2dflens", "sub", "taipan", "ozdes_deep", "michael100","michael125","michael150","michael200"]
     return groups, names
 
 
@@ -83,7 +89,10 @@ def make_all_video(name=None):
 if __name__ == "__main__":
     # make_figures()
     # make_all_video()
-    make_figures("michael")
+    make_figures("michael100")
+    make_figures("michael125")
+    make_figures("michael150")
+    make_figures("michael200")
     # make_figures("ozdes_deep")
     # make_figures("ozdes")
     # make_figures("sub")
