@@ -139,7 +139,7 @@ class SupernovaeSurvey(Survey):
 
     def get_size(self, time):
         diff = time - self.ts
-        t0_size = 10
+        t0_size = 15
         size = (diff < 0) * np.exp(diff / 5)
         size += (diff > 0) * (1 + diff * 0.03)
         return t0_size * size
