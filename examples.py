@@ -59,6 +59,7 @@ def get_permutations():
     o = OzDES()
     o2 = OzDES()
     o3 = OzDES()
+    w.zmax = 1.5
     o2.zmax = 1.0
     o3.zmax = 4.0
     l = Tdflens()
@@ -70,7 +71,8 @@ def get_permutations():
 
 def make_figures(name=None):
     groups, names = get_permutations()
-    Parallel(n_jobs=4)(delayed(make)(n + ".png", g) for n, g in zip(names, groups) if name is None or name == n)
+    Parallel(n_jobs=4)(delayed(make)(n + ".pdf", g) for n, g in zip(names, groups) if name is None or name == n)
+    Parallel(n_jobs=4)(delayed(make)(n + ".eps", g) for n, g in zip(names, groups) if name is None or name == n)
 
 
 def make_all_video(name=None):
