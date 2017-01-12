@@ -1,6 +1,6 @@
 from surveyvis.camera import OrbitZoomCamera
 from surveyvis.surveys import WiggleZ, TwoDegreeField, Gama, SDSS, SixDegreefField, Dummy, Dummy2, OzDES, Tdflens, \
-    Taipan, RandomSupernovae, OzDESSupernovae, SupernovaeSurvey
+    Taipan, RandomSupernovae, OzDESSupernovae, SupernovaeSurvey, OzDESSupernovaeAll
 from surveyvis.visualiser import Visualisation
 import numpy as np
 from joblib import Parallel, delayed
@@ -134,15 +134,16 @@ def get_permutations(full_data=False):
         o = OzDES()
         o2 = OzDES()
         o3 = OzDES()
-        o2.zmax = 1.0
+        o2.zmax = 0.7
         o3.zmax = 4.0
         l = Tdflens()
         p = Taipan()
         rs = RandomSupernovae()
         ozs = OzDESSupernovae()
-        groups = [[w, t, s, g, x, o], [w, t, s, g, x], [w, t, s, g, x, o, ozs], w, t, g, s, x, o, l, [l, o2, t], p, [l, t, o3], [o2, ozs]]
+        ozsa = OzDESSupernovaeAll()
+        groups = [[w, t, s, g, x, o], [w, t, s, g, x], [w, t, s, g, x, o, ozs], w, t, g, s, x, o, l, [l, o2, t], p, [l, t, o3], [o2, ozs], [o2, ozsa]]
         names = ["all", "all_nooz", "all_supernova", "wigglez", "2df", "gama", "sdss", "6df", "ozdes", "2dflens", "sub", "taipan",
-                 "ozdes_deep", "ozdes_nova"]
+                 "ozdes_deep", "ozdes_nova", "ozdes_allnova"]
     else:
         t = TwoDegreeField()
         s = SDSS()
@@ -198,7 +199,7 @@ def make_all_video(name=None, low_quality=False, num_frames=360):
 if __name__ == "__main__":
     # Uncomment the below two lines to do everything
     # make_figures()
-    make_all_video()
+    # make_all_video()
 
     # As an example, make the 6df figures and video
     # make_figures("6df")
@@ -213,4 +214,5 @@ if __name__ == "__main__":
     # make_all_video("6df")
     # make_figures("ozdes")
     # make_all_video("ozdes_nova")
+    make_all_video("ozdes_allnova")
     # make_all_video("all_supernova")

@@ -86,8 +86,8 @@ class SupernovaeSurvey(Survey):
             colours.append(colour)
         colours = np.array(colours)
         # Now get alphas
-        length_peak = 30
-        min_t = -30
+        length_peak = 1
+        min_t = -15
         diff = time - self.ts
         alphas = []
         for d in diff:
@@ -96,7 +96,7 @@ class SupernovaeSurvey(Survey):
             elif d < length_peak:
                 alphas.append(1)
             else:
-                alphas.append(np.exp(-(d - length_peak) / 20))
+                alphas.append(np.exp(-(d - length_peak) / 2))
 
         alphas = np.array(alphas) / np.sqrt(layers)
         rgba = np.hstack((colours, alphas[:, None]))
@@ -139,9 +139,9 @@ class SupernovaeSurvey(Survey):
 
     def get_size(self, time):
         diff = time - self.ts
-        t0_size = 30
-        size = (diff < 0) * np.exp(diff / 10)
-        size += (diff > 0) * (1 + diff * 0.1)
+        t0_size = 10
+        size = (diff < 0) * np.exp(diff / 5)
+        size += (diff > 0) * (1 + diff * 0.03)
         return t0_size * size
 
 
@@ -163,6 +163,22 @@ class RandomSupernovae(SupernovaeSurvey):
 class OzDESSupernovae(SupernovaeSurvey):
     def __init__(self):
         data = np.load("surveyvis/data/supernovae.npy")
+
+        ra = data[:, 0] * np.pi / 180
+        dec = data[:, 1] * np.pi / 180
+        z = data[:, 2]
+
+        ts = data[:, 3]
+        mb = data[:, 4]
+        x1 = data[:, 5]
+        c = data[:, 6]
+
+        super().__init__(ra, dec, z, ts, mb, x1, c)
+
+
+class OzDESSupernovaeAll(SupernovaeSurvey):
+    def __init__(self):
+        data = np.load("surveyvis/data/ozdes_supernovae_all.npy")
 
         ra = data[:, 0] * np.pi / 180
         dec = data[:, 1] * np.pi / 180
