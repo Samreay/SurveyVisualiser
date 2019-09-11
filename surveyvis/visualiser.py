@@ -4,7 +4,7 @@ from matplotlib.ticker import MaxNLocator
 from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
 from scipy.ndimage.filters import gaussian_filter
-from scipy.misc import imresize
+from skimage.transform import resize
 from surveyvis.surveys import SupernovaeSurvey
 from surveyvis.camera import Camera
 import gc
@@ -58,6 +58,7 @@ class Visualisation(object):
             The filename to save the plot to
         """
         image_ratio = 1920.0 / 1080.0
+        print("Making file ", filename)
 
         azim, elev, rmax = self.camera.get_azim_elevation_radius(ratio)
 
@@ -76,7 +77,7 @@ class Visualisation(object):
         else:
             print("Making high quality")
             s_size = 10
-            layers = 20
+            layers = 30
 
         size = (s_size, s_size)
         pixel_height = 192 * s_size / image_ratio
@@ -143,7 +144,7 @@ class Visualisation(object):
     def _reset_axis(self, ax, rmax):
         ax.clear()
         ax.set_axis_off()
-        ax.set_aspect("equal")
+        # ax.set_aspect("equal")
         ax.set_xlim(-rmax, rmax)
         ax.set_ylim(-rmax, rmax)
         ax.set_zlim(-rmax, rmax)
@@ -163,7 +164,7 @@ class Visualisation(object):
 
     def _get_3d_fig(self, azim, elev, rmax, size):
         fig = plt.figure(figsize=size, dpi=192, facecolor=self.plot_background_color, frameon=False)
-        ax = fig.add_subplot(111, projection='3d', axisbg=self.axis_background_color)
+        ax = fig.add_subplot(111, projection='3d', facecolor=self.axis_background_color)
         # Set background colours and screw around with things
         plt.gca().patch.set_facecolor((0, 0, 0, 0))
         ax.set_axis_off()
@@ -176,7 +177,7 @@ class Visualisation(object):
         ax.set_xlim(-rmax, rmax)
         ax.set_ylim(-rmax, rmax)
         ax.set_zlim(-rmax, rmax)
-        ax.set_aspect("equal")
+        # ax.set_aspect("equal")
         return ax, fig
 
     def _blur(self, first, stacked):
@@ -185,16 +186,18 @@ class Visualisation(object):
         stacked = np.clip(stacked, 0, 255)
 
         # Resize stacked so it is 25% of its original size, because this step is *slow*
-        stacked = imresize(stacked, 25)
+        output_size = np.array(stacked.shape)
+        small_size = (output_size * 0.5).astype(np.int)
+        # stacked = resize(stacked, small_size)
         # Run a gaussian filter of the layer to blur it, to simulate glow of some sort. Blue R, G, B, alpha individually
         smoothed = np.dstack(
             [gaussian_filter(stacked[:, :, i], sigma=4, truncate=3) for i in range(stacked.shape[2])])
         # Now blur the colours togeter
-        s2 = gaussian_filter(stacked, sigma=10, truncate=3)
+        s2 = gaussian_filter(stacked, sigma=20, truncate=3)
         # Modify blur ratios (non-colour blur to colour blur)
         add = np.floor(0.5 * smoothed + s2)
         # Scale it back up to size
-        add = imresize(add, 400)
+        # add = resize(add, output_size)
         # Reclip it and decrease intensity to 40%
         add = np.clip(add * 0.4, 0, 255)
         # Turn it back to int16 so we can add it (gaussian_filter makes it all doubles)
@@ -238,7 +241,7 @@ class Visualisation(object):
 
         # Get figure, axes and set them up
         fig = plt.figure(figsize=(8, 8), dpi=dpi, facecolor=self.plot_background_color, frameon=False)
-        ax = fig.add_subplot(111, projection='polar', axisbg=self.axis_background_color)
+        ax = fig.add_subplot(111, projection='polar', facecolor=self.axis_background_color)
         ax.clear()
         ax.set_rlim(0, rmax)
         ax.yaxis.set_major_locator(MaxNLocator(4, prune="lower"))
@@ -301,7 +304,7 @@ class Visualisation(object):
 
         # Get new plot and set it up
         fig = plt.figure(figsize=(8, 8), dpi=dpi, facecolor=self.plot_background_color, frameon=False)
-        ax = fig.add_subplot(111, projection='polar', axisbg=self.axis_background_color)
+        ax = fig.add_subplot(111, projection='polar', facecolor=self.axis_background_color)
         ax.clear()
         ax.set_rlim(0, rmax)
         ax.yaxis.set_major_locator(MaxNLocator(4, prune="lower"))

@@ -178,7 +178,7 @@ class OzDESSupernovae(SupernovaeSurvey):
 
 class OzDESSupernovaeAll(SupernovaeSurvey):
     def __init__(self):
-        data = np.load("surveyvis/data/ozdes_supernovae_all.npy")
+        data = np.load("surveyvis/data/supernovae.npy")
 
         ra = data[:, 0] * np.pi / 180
         dec = data[:, 1] * np.pi / 180
@@ -240,7 +240,7 @@ class TwoDegreeField(StaticSurvey):
         super().__init__(data[:, 0] * np.pi / 180, data[:, 1] * np.pi / 180, data[:, 2], zmax=0.3)
         self.color = "#941313"
         self.alpha = 0.7
-        self.size = 1.0
+        self.size = 2.0
 
 
 class Gama(StaticSurvey):
@@ -248,7 +248,7 @@ class Gama(StaticSurvey):
         data = np.load("surveyvis/data/gama.npy")
         super().__init__(data[:, 0] * np.pi / 180, data[:, 1] * np.pi / 180, data[:, 2], zmax=0.5)
         self.color = "#28AD2C"
-        self.size = 0.5
+        self.size = 1
         self.alpha = 0.2
 
 
@@ -266,13 +266,13 @@ class SixDegreefField(StaticSurvey):
         data = np.load("surveyvis/data/6df.npy")
         super().__init__(data[:, 0] * np.pi / 180, data[:, 1] * np.pi / 180, data[:, 2], zmax=0.15)
         self.color = "#e2a329"
-
+        self.size = 2
 
 class OzDES(StaticSurvey):
     def __init__(self):
         data = np.load("surveyvis/data/ozdes.npy")
         super().__init__(data[:, 0] * np.pi / 180, data[:, 1] * np.pi / 180, data[:, 2], zmax=1.6)
-        self.size = 1.1
+        self.size = 1.0
         self.alpha = 1.0
         self.color = "#da6016"
 
