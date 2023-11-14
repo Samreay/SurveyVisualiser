@@ -1,7 +1,10 @@
+from pathlib import Path
 import numpy as np
+import pandas as pd
+import sncosmo
 
 
-class Survey(object):
+class Survey:
     def __init__(self, ra, dec, z, zmax=None):
         """
         An object to hold coordinates and plotting information
@@ -22,6 +25,7 @@ class Survey(object):
         self.dec = dec
         self.z = z
         zmax = zmax or np.max(z)
+        print("zmax", zmax)
         self.zmax = zmax
 
         # Conver to Cartesian
@@ -47,7 +51,6 @@ class SupernovaeSurvey(Survey):
     """
 
     def __init__(self, ra, dec, z, ts, mb, x1, c, zmax=None, redshift=False):
-
         super().__init__(ra, dec, z, zmax=zmax)
 
         self.ts = ts
@@ -59,13 +62,13 @@ class SupernovaeSurvey(Survey):
         x0 = np.exp(-0.9209 * mb + 9.7921)  # Note that we dont show varying mB this is mostly just for sncosmo
         self.x0s = x0
 
+        self.source = sncosmo.get_source("salt2", version="2.4")
+        self.model = sncosmo.Model(source=self.source)
+
     def get_time_range(self):
         return np.min(self.ts) - 50, np.max(self.ts) + 100
 
     def get_colors(self, time, style="ivu3", layers=1):
-        import sncosmo
-        model = sncosmo.Model(source='salt2')
-
         # Get band filter name to work with sncosmo
         bands = ["bessellr", "bessellv", "bessellb", "besselli", "bessellux"]
 
@@ -74,11 +77,11 @@ class SupernovaeSurvey(Survey):
             if not self.redshift:
                 z = 0.2
             # z = 0.05
-            model.set(z=z, t0=t, x0=x0, x1=x1, c=c)
+            self.model.set(z=z, t0=t, x0=x0, x1=x1, c=c)
             fluxes = []
             for b in bands:
                 try:
-                    flux = model.bandflux(b, time)
+                    flux = self.model.bandflux(b, time)
                 except ValueError:
                     flux = 0
                 fluxes.append(flux)
@@ -105,27 +108,26 @@ class SupernovaeSurvey(Survey):
     def get_color_from_bands(self, fluxes, style):
         vr, vg, vb, ir, uv = tuple(fluxes)
 
-        if style == 'rgb':
-            r = vr
-            g = vg
-            b = vb
-        elif style == 'ivu1':
+        r = vr
+        g = vg
+        b = vb
+        if style == "ivu1":
             r = ir
             g = vg
             b = uv
-        elif style == 'ivu2':
+        elif style == "ivu2":
             r = ir
             g = (vb + vg + vr) / 3
             b = uv / 2
-        elif style == 'ivu3':
+        elif style == "ivu3":
             r = vg / 2 + vr + ir
             g = vb / 2 + vg + 2 / 3 * vr
             b = ir + vb + 1 / 2 * uv
-        elif style == 'rbslide':
+        elif style == "rbslide":
             r = ir + (vr + vg + vb) / 2
             g = (vr + vg + vb) / 2
             b = (vr + vg + vb) / 2 + uv
-        elif style == 'rbslide2':
+        elif style == "rbslide2":
             r = ir + vr + (vr + vg + vb) / 2
             g = (vr + vg + vb) / 2
             b = (vr + vg + vb) / 2 + vb + uv
@@ -133,7 +135,7 @@ class SupernovaeSurvey(Survey):
         rgb = np.array([r, g, b])  # Flux Array
         rgb += 0.2 * np.max(rgb)
         rgb *= rgb > 0
-        if not np.max(rgb) == 0:
+        if np.max(rgb) != 0:
             rgb /= np.max(rgb)
         return rgb
 
@@ -147,15 +149,15 @@ class SupernovaeSurvey(Survey):
 
 class RandomSupernovae(SupernovaeSurvey):
     def __init__(self, n=500):
+        rng = np.random.RandomState(42)
+        z = rng.uniform(0.1, 1.0, n)
+        ra = rng.uniform(0, 2 * np.pi, n)
+        dec = rng.uniform(-np.pi / 2, np.pi / 2, n)
+        ts = rng.uniform(5000, 5500, n)
 
-        z = np.random.uniform(0.1, 1.0, n)
-        ra = np.random.uniform(0, 2 * np.pi, n)
-        dec = np.random.uniform(-np.pi / 2, np.pi / 2, n)
-        ts = np.random.uniform(5000, 5500, n)
-
-        mb = np.random.normal(20, 1, n)  # This universe has some odd cosmology
-        x1 = np.random.normal(0, 0.8, n)
-        c = np.random.normal(0, 0.1, n)
+        mb = rng.normal(20, 1, n)  # This universe has some odd cosmology
+        x1 = rng.normal(0, 0.8, n)
+        c = rng.normal(0, 0.1, n)
 
         super().__init__(ra, dec, z, ts, mb, x1, c)
 
@@ -190,6 +192,33 @@ class OzDESSupernovaeAll(SupernovaeSurvey):
         c = data[:, 6]
 
         super().__init__(ra, dec, z, ts, mb, x1, c)
+
+
+class DES5YRSN(SupernovaeSurvey):
+    def __init__(self):
+        here = Path(__file__).parent / "data/des_5yr_snia.FITRES"
+        data = pd.read_csv(here, delim_whitespace=True, comment="#")
+        min_date = 56000
+        data = data[data["PKMJD"] > min_date]
+        super().__init__(
+            data["HOST_RA"] * np.pi / 180,
+            data["HOST_DEC"] * np.pi / 180,
+            data["zCMB"],
+            data["PKMJD"],
+            data["mB"],
+            data["x1"],
+            data["c"],
+            redshift=True,
+        )
+
+
+class DES5YRSNStatic(Survey):
+    def __init__(self):
+        here = Path(__file__).parent / "data/des_5yr_snia.FITRES"
+        data = pd.read_csv(here, delim_whitespace=True, comment="#")
+        min_date = 56000
+        data = data[data["PKMJD"] > min_date]
+        super().__init__(data["HOST_RA"] * np.pi / 180, data["HOST_DEC"] * np.pi / 180, data["zCMB"])
 
 
 class Dummy(StaticSurvey):
@@ -267,6 +296,7 @@ class SixDegreefField(StaticSurvey):
         super().__init__(data[:, 0] * np.pi / 180, data[:, 1] * np.pi / 180, data[:, 2], zmax=0.15)
         self.color = "#e2a329"
         self.size = 2
+
 
 class OzDES(StaticSurvey):
     def __init__(self):

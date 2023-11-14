@@ -1,1 +1,76 @@
 .idea/
+.vscode
+.git
+output/*/*.png
+
+# Compiled source #
+###################
+*.com
+*.class
+*.dll
+*.exe
+*.o
+
+# OS generated files #
+######################
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# PYTHON #
+__pycache__
+*.py[cod]
+*.py~
+*.egg-info/
+
+# Generated files
+profile*
+Profile*
+*.html
+
+# Output files
+output
+
+# Virtual environment
+.venv
+
+# Cython
+*.c
+*.cpp
+modelling/build
+build
+*linux*.so
+# Dont save tmp files
+tmp*
+
+# IDE
+.vscode
+
+# Ignore logging
+report.log
+
+# Ignore ssh keys please
+id_rsa
+
+# Ignore cache
+cache/
+.mypy_cache/
+.pytest_cache/
+**/dist/
+
+# Arenko packages
+**/arenkods/
+**/nimbus/
+
+# Dont fill up the repo with reports
+**/docs/**/*.csv
+**/docs/**/*.pdf
+
+setup.py
+.ruff_cache
+.idea
+.coverage

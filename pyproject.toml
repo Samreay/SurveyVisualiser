@@ -1,0 +1,100 @@
+[tool.poetry]
+name = "survey-visualiser"
+version = "0.1.0"
+description = ""
+authors = ["Samuel Hinton <samuelreay@gmail.com>"]
+readme = "README.md"
+packages = [{include = "surveyvis"}]
+
+[tool.poetry.dependencies]
+python = "^3.11,<3.12"
+scipy = "^1.11.3"
+numpy = "^1.26.2"
+matplotlib = "^3.8.1"
+pandas = "^2.1.3"
+joblib = "^1.3.2"
+sncosmo = "^2.10.2"
+
+[tool.poetry.group.dev.dependencies]
+ruff = ">=0.1.5, <1"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 120
+target-version = ['py311']
+
+
+[tool.ruff]
+src = ["src"]
+select = [
+    "E",
+    "F",
+    "I",
+    "N",
+    "W",
+    "D207",
+    "D208",
+    "D300",
+    "UP",
+    "YTT",
+    "ASYNC",
+    "DTZ",
+    "G10",
+    "G101",
+    "G201",
+    "G202",
+    "INP001",
+    "PIE",
+    "T20",
+    "SIM",
+    "PTH",
+    "PD",
+    "PLE",
+    "PLR",
+    "PLW",
+    "TRY",
+    "NPY",
+    "RUF",
+]
+ignore = [
+    "PD010",
+    "PD011",
+    "PD901",
+    "PLR2004",
+    "UP017",
+    "TRY003",
+    "INP001",
+    "PLR0912",
+    "PLR0913",
+    "TRY300",
+    "E712",
+    "PLW2901",
+    "W191",
+    "E111",
+    "E114",
+    "E117",
+    "D206",
+    "D300",
+    "Q001",
+    "Q000",
+    "Q002",
+    "Q003",
+    "COM812",
+    "COM819",
+    "ISC001",
+    "ISC002",
+]
+line-length = 120
+target-version = "py311"
+
+[tool.ruff.extend-per-file-ignores]
+"test/***" = ["INP001"]
+"__init__.py" = ["E402", "F401"]
+
+[tool.ruff.format]
+indent-style = "space"
+quote-style = "double"
+line-ending = "auto"

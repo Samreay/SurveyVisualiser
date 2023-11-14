@@ -1,6 +1,22 @@
 from surveyvis.camera import OrbitZoomCamera
-from surveyvis.surveys import WiggleZ, TwoDegreeField, Gama, SDSS, SixDegreefField, Dummy, Dummy2, OzDES, Tdflens, \
-    Taipan, RandomSupernovae, OzDESSupernovae, SupernovaeSurvey, OzDESSupernovaeAll
+from surveyvis.surveys import (
+    DES5YRSN,
+    DES5YRSNStatic,
+    WiggleZ,
+    TwoDegreeField,
+    Gama,
+    SDSS,
+    SixDegreefField,
+    Dummy,
+    Dummy2,
+    OzDES,
+    Tdflens,
+    Taipan,
+    RandomSupernovae,
+    OzDESSupernovae,
+    SupernovaeSurvey,
+    OzDESSupernovaeAll,
+)
 from surveyvis.visualiser import Visualisation
 import numpy as np
 from joblib import Parallel, delayed
@@ -50,6 +66,8 @@ def make_video(name, data, low_quality=False, num_frames=360):
         Survey if you only want one.
     """
     print("Making video for %s" % name)
+    if low_quality:
+        print("Low quality")
     # Create an empty visualisation
     vis = Visualisation()
 
@@ -76,10 +94,14 @@ def make_video(name, data, low_quality=False, num_frames=360):
         maxr = 0.7 * max(rs)
         minr = 0.7 * min(rs)
 
+    print("maxr", maxr)
+
     vis.set_camera(OrbitZoomCamera(minr, maxr, num_turns=num_turns))
 
     # Using 4 cores, call make3d for each degree from 0 to 360
-    Parallel(n_jobs=5)(delayed(make3d)(name, vis, i, num_frames, low_quality) for i in range(0, num_frames))
+    Parallel(n_jobs=16)(delayed(make3d)(name, vis, i, num_frames, low_quality) for i in range(num_frames))
+    # for i in range(num_frames):
+    #     make3d(name, vis, i, num_frames, low_quality=low_quality)
 
 
 def make(name, data):
@@ -112,7 +134,7 @@ def make(name, data):
         vis.add_survey(data)
 
     # Render the latex plot out
-    vis.render_latex(name.replace(".png", "_latex.png"))
+    # vis.render_latex(name.replace(".png", "_latex.png"))
 
     # Render the colour plot
     vis.render2d(name)
@@ -141,16 +163,50 @@ def get_permutations(full_data=False):
         rs = RandomSupernovae()
         ozs = OzDESSupernovae()
         ozsa = OzDESSupernovaeAll()
-        groups = [[w, t, s, g, x, o], [w, t, s, g, x], [w, t, s, g, x, o, ozs], w, t, g, s, x, o, l, [l, o2, t], p, [l, t, o3], [o2, ozs], [o2, ozsa],
-                  [w, t, g, x, o, ozs]]
-        names = ["all", "all_nooz", "all_supernova", "wigglez", "2df", "gama", "sdss", "6df", "ozdes", "2dflens", "sub", "taipan",
-                 "ozdes_deep", "ozdes_nova", "ozdes_allnova", "aussie"]
+        groups = [
+            [w, t, s, g, x, o],
+            [w, t, s, g, x],
+            [w, t, s, g, x, o, ozs],
+            w,
+            t,
+            g,
+            s,
+            x,
+            o,
+            l,
+            [l, o2, t],
+            p,
+            [l, t, o3],
+            [o2, ozs],
+            [o2, ozsa],
+            [w, t, g, x, o, ozs],
+        ]
+        names = [
+            "all",
+            "all_nooz",
+            "all_supernova",
+            "wigglez",
+            "2df",
+            "gama",
+            "sdss",
+            "6df",
+            "ozdes",
+            "2dflens",
+            "sub",
+            "taipan",
+            "ozdes_deep",
+            "ozdes_nova",
+            "ozdes_allnova",
+            "aussie",
+        ]
     else:
-        t = TwoDegreeField()
-        s = SDSS()
-        x = SixDegreefField()
-        groups = [[t, s, x], t, s, x]
-        names = ["all_small", "2df", "sdss", "6df"]
+        # t = TwoDegreeField()
+        # s = SDSS()
+        # x = SixDegreefField()
+        # groups = [[t, s, x], t, s, x]
+        # names = ["all_small", "2df", "sdss", "6df"]
+        groups = [DES5YRSN(), DES5YRSNStatic()]
+        names = ["des_5yr", "des_5yr_static"]
     return groups, names
 
 
@@ -167,7 +223,10 @@ def make_figures(name=None):
     """
     groups, names = get_permutations()
     # Using 4 cores, make all the images we want
-    Parallel(n_jobs=4)(delayed(make)(n + ".png", g) for n, g in zip(names, groups) if name is None or name == n)
+    # Parallel(n_jobs=4)(delayed(make)(n + ".png", g) for n, g in zip(names, groups) if name is None or name == n)
+    for n, g in zip(names, groups):
+        if name is None or name == n:
+            make(n + ".png", g)
 
 
 def make_all_video(name=None, low_quality=False, num_frames=360):
@@ -204,6 +263,7 @@ if __name__ == "__main__":
 
     # As an example, make the 6df figures and video
     # make_figures("6df")
+    # make_figures("des_5yr_static")
 
     # Uncomment one of the below lines (and comment out the above two)
     # to make only the plot declared
@@ -213,7 +273,7 @@ if __name__ == "__main__":
     # make_figures("sub")
     # make_figures("all")
     # make_all_video("aussie")
-    make_all_video("aussie", low_quality=False)
+    make_all_video("des_5yr", low_quality=False)
     # make_figures("ozdes")
     # make_all_video("ozdes_nova")
     # make_all_video("ozdes_allnova")

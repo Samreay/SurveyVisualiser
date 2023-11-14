@@ -1,15 +1,19 @@
-import matplotlib.pyplot as plt
-import matplotlib.ticker as ticker
-from matplotlib.ticker import MaxNLocator
-from mpl_toolkits.mplot3d import Axes3D
-import numpy as np
-from scipy.ndimage.filters import gaussian_filter
-from skimage.transform import resize
-from surveyvis.surveys import SupernovaeSurvey
-from surveyvis.camera import Camera
 import gc
 
-class Visualisation(object):
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+import numpy as np
+from matplotlib import ticker
+from matplotlib.ticker import MaxNLocator
+from scipy.ndimage.filters import gaussian_filter
+
+from surveyvis.camera import Camera
+from surveyvis.surveys import SupernovaeSurvey
+
+mpl.rcParams["axes.linewidth"] = 0.4  # or any other thickness you want
+
+
+class Visualisation:
     def __init__(self):
         """
         The workhorse class, which is responsible for accepting data and
@@ -48,7 +52,6 @@ class Visualisation(object):
         self.camera = camera
 
     def render3d(self, filename, ratio, low_quality=False):
-
         """
         Render a 3D still to file
 
@@ -71,7 +74,6 @@ class Visualisation(object):
         time = t_min + (t_max - t_min) * ratio
 
         if low_quality:
-            print("Making low quality")
             s_size = 4
             layers = 2
         else:
@@ -110,8 +112,15 @@ class Visualisation(object):
                     ax.scatter(s.xs, s.ys, s.zs, lw=0, s=size * ratio_i, c=colors)
 
                 else:
-                    ax.scatter(s.xs[i::layers], s.ys[i::layers], s.zs[i::layers], lw=0, alpha=0.9 * s.alpha,
-                               s=0.3 * s.size * s.zmax / rmax, c=s.color)
+                    ax.scatter(
+                        s.xs[i::layers],
+                        s.ys[i::layers],
+                        s.zs[i::layers],
+                        lw=0,
+                        alpha=0.9 * s.alpha,
+                        s=0.3 * s.size * s.zmax / rmax,
+                        c=s.color,
+                    )
 
             # Render the plot and then steal the RGB buffer again
             fig.canvas.draw()
@@ -153,7 +162,7 @@ class Visualisation(object):
         fig, ax = plt.subplots(figsize=finsize, dpi=192, frameon=False)
         plt.axis("off")
         fig.subplots_adjust(0, 0, 1, 1)
-        ax.imshow(first, aspect='auto')
+        ax.imshow(first, aspect="auto")
         extent = ax.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
         # Save this out to file.
         fig.savefig(filename, dpi=192, bbox_inches=extent, pad_inches=0, transparent=True)
@@ -164,14 +173,14 @@ class Visualisation(object):
 
     def _get_3d_fig(self, azim, elev, rmax, size):
         fig = plt.figure(figsize=size, dpi=192, facecolor=self.plot_background_color, frameon=False)
-        ax = fig.add_subplot(111, projection='3d', facecolor=self.axis_background_color)
+        ax = fig.add_subplot(111, projection="3d", facecolor=self.axis_background_color)
         # Set background colours and screw around with things
         plt.gca().patch.set_facecolor((0, 0, 0, 0))
         ax.set_axis_off()
         fig.subplots_adjust(0, 0, 1, 1)
-        ax.w_xaxis.set_pane_color(self.axis_background_color)
-        ax.w_yaxis.set_pane_color(self.axis_background_color)
-        ax.w_zaxis.set_pane_color(self.axis_background_color)
+        ax.xaxis.pane.set_facecolor(self.axis_background_color)
+        ax.yaxis.pane.set_facecolor(self.axis_background_color)
+        ax.zaxis.pane.set_facecolor(self.axis_background_color)
         # Set viewing limits and camera
         ax.view_init(elev=elev, azim=azim)
         ax.set_xlim(-rmax, rmax)
@@ -186,12 +195,9 @@ class Visualisation(object):
         stacked = np.clip(stacked, 0, 255)
 
         # Resize stacked so it is 25% of its original size, because this step is *slow*
-        output_size = np.array(stacked.shape)
-        small_size = (output_size * 0.5).astype(np.int)
         # stacked = resize(stacked, small_size)
         # Run a gaussian filter of the layer to blur it, to simulate glow of some sort. Blue R, G, B, alpha individually
-        smoothed = np.dstack(
-            [gaussian_filter(stacked[:, :, i], sigma=4, truncate=3) for i in range(stacked.shape[2])])
+        smoothed = np.dstack([gaussian_filter(stacked[:, :, i], sigma=4, truncate=3) for i in range(stacked.shape[2])])
         # Now blur the colours togeter
         s2 = gaussian_filter(stacked, sigma=20, truncate=3)
         # Modify blur ratios (non-colour blur to colour blur)
@@ -209,7 +215,7 @@ class Visualisation(object):
         first += add
         return first
 
-    def render_latex(self, filename, grid=True, grid_color="#333333", theta_color="#111111", outline=True, dpi=600):
+    def render_latex(self, filename, grid=True, grid_color="#333333", theta_color="#333333", outline=True, dpi=600):
         """
         Render out a latex picture to file
 
@@ -241,36 +247,45 @@ class Visualisation(object):
 
         # Get figure, axes and set them up
         fig = plt.figure(figsize=(8, 8), dpi=dpi, facecolor=self.plot_background_color, frameon=False)
-        ax = fig.add_subplot(111, projection='polar', facecolor=self.axis_background_color)
+        ax = fig.add_subplot(111, projection="polar", facecolor=self.axis_background_color)
         ax.clear()
         ax.set_rlim(0, rmax)
         ax.yaxis.set_major_locator(MaxNLocator(4, prune="lower"))
         ax.grid(grid)
-        ax.set_thetagrids(self.theta_grid, frac=1.06)
+        ax.set_thetagrids(self.theta_grid)
         ax.set_rlabel_position(90)
         ax.xaxis.label.set_color(grid_color)
         ax.yaxis.label.set_color(grid_color)
-        ax.tick_params(axis='x', colors=theta_color)
-        ax.tick_params(axis='y', colors=grid_color)
+        ax.tick_params(axis="x", colors=theta_color)
+        ax.tick_params(axis="y", colors=grid_color)
         ax.grid(color=grid_color)
-        ax.spines['polar'].set_color(grid_color)
-        ax.spines['polar'].set_visible(outline)
+        ax.spines["polar"].set_color(grid_color)
+        ax.spines["polar"].set_visible(outline)
         ax.set_xticklabels(self.theta_labels, fontsize=14)
         ax.get_yaxis().set_major_formatter(ticker.FuncFormatter(formatter))
         for tick in ax.yaxis.get_major_ticks():
-            tick.label1.set_horizontalalignment('center')
-            tick.label1.set_verticalalignment('top')
+            tick.label1.set_horizontalalignment("center")
+            tick.label1.set_verticalalignment("top")
 
         # For each survey, plot the points *in black*
         for s in self.surveys:
-            ax.scatter(s.ra, s.z, lw=0, alpha=0.7 * s.alpha, s=s.size * np.power(s.zmax / rmax, 1.7), c='k')
+            ax.scatter(s.ra, s.z, lw=0, alpha=0.7 * s.alpha, s=s.size * np.power(s.zmax / rmax, 1.7), c="k")
 
         # Save out the figure with minimal borders
         plt.tight_layout()
         fig.savefig(filename, dpi=dpi, bbox_inches="tight", pad_inches=0.1, transparent=True)
 
-    def render2d(self, filename, grid=True, grid_color="#AAAAAA", theta_color="#111111", outline=True, backplot=True,
-                 layers=20, dpi=600):
+    def render2d(
+        self,
+        filename,
+        grid=True,
+        grid_color="#AAAAAA",
+        theta_color="#111111",
+        outline=True,
+        backplot=True,
+        layers=20,
+        dpi=600,
+    ):
         """
         Render out a colour 2D picture to file
 
@@ -304,25 +319,25 @@ class Visualisation(object):
 
         # Get new plot and set it up
         fig = plt.figure(figsize=(8, 8), dpi=dpi, facecolor=self.plot_background_color, frameon=False)
-        ax = fig.add_subplot(111, projection='polar', facecolor=self.axis_background_color)
+        ax = fig.add_subplot(111, projection="polar", facecolor=self.axis_background_color)
         ax.clear()
         ax.set_rlim(0, rmax)
         ax.yaxis.set_major_locator(MaxNLocator(4, prune="lower"))
         ax.grid(grid)
-        ax.set_thetagrids(self.theta_grid, frac=1.06)
+        ax.set_thetagrids(self.theta_grid)
         ax.set_rlabel_position(90)
         ax.xaxis.label.set_color(grid_color)
         ax.yaxis.label.set_color(grid_color)
-        ax.tick_params(axis='x', colors=theta_color)
-        ax.tick_params(axis='y', colors=grid_color)
+        ax.tick_params(axis="x", colors=theta_color)
+        ax.tick_params(axis="y", colors=grid_color)
         ax.grid(color=grid_color)
-        ax.spines['polar'].set_color(grid_color)
-        ax.spines['polar'].set_visible(outline)
+        ax.spines["polar"].set_color(grid_color)
+        ax.spines["polar"].set_visible(outline)
         ax.set_xticklabels(self.theta_labels, fontsize=14)
         ax.get_yaxis().set_major_formatter(ticker.FuncFormatter(formatter))
         for tick in ax.yaxis.get_major_ticks():
-            tick.label1.set_horizontalalignment('center')
-            tick.label1.set_verticalalignment('top')
+            tick.label1.set_horizontalalignment("center")
+            tick.label1.set_verticalalignment("top")
         plt.tight_layout()
 
         # If backplot, render a black background behind each dot
@@ -344,34 +359,44 @@ class Visualisation(object):
             # Reset axis
             ax.clear()
             ax.patch.set_facecolor(self.plot_second_background_color)
-            ax.set_thetagrids(self.theta_grid, frac=1.06)
+            ax.set_thetagrids(self.theta_grid)
             # ax.set_rgrids(self.z_grid, angle=90)
             ax.set_rlabel_position(90)
-            ax.tick_params(axis='x', colors=(0, 0, 0, 0))
-            ax.tick_params(axis='y', colors=(0, 0, 0, 0))
+            ax.tick_params(axis="x", colors=(0, 0, 0, 0))
+            ax.tick_params(axis="y", colors=(0, 0, 0, 0))
             ax.grid(color=grid_color)
-            ax.spines['polar'].set_color(grid_color)
-            ax.spines['polar'].set_visible(outline)
+            if i == 0:
+                ax.spines["polar"].set_color(grid_color)
+                ax.spines["polar"].set_visible(outline)
+            else:
+                ax.spines["polar"].set_visible(False)
+
             ax.set_xticklabels(self.theta_labels, fontsize=14)
             # Currently have commented out code to render the redshift labels because it was clutter
             # ax.set_yticklabels(self.z_labels, fontsize=12)
             ax.get_yaxis().set_major_formatter(ticker.FuncFormatter(formatter))
             for tick in ax.yaxis.get_major_ticks():
-                tick.label1.set_horizontalalignment('center')
-                tick.label1.set_verticalalignment('top')
+                tick.label1.set_horizontalalignment("center")
+                tick.label1.set_verticalalignment("top")
             ax.grid(False)
-            ax.spines['polar'].set_visible(False)
+            ax.spines["polar"].set_visible(False)
             ax.set_rlim(0, rmax)
 
             # Now render out each survey
             for s in self.surveys:
-                ax.scatter(s.ra[i::layers], s.z[i::layers], lw=0, alpha=s.alpha,
-                           s=s.size * np.power(s.zmax / rmax, 1.7), c=s.color)
+                ax.scatter(
+                    s.ra[i::layers],
+                    s.z[i::layers],
+                    lw=0,
+                    alpha=s.alpha,
+                    s=s.size * np.power(s.zmax / rmax, 1.7),
+                    c=s.color,
+                )
 
             # Update plot layout and colours, and then render it again
             plt.tight_layout()
-            ax.tick_params(axis='x', colors=(0, 1, 0, 0))
-            ax.tick_params(axis='y', colors=(0, 0, 0, 0))
+            ax.tick_params(axis="x", colors=(0, 1, 0, 0))
+            ax.tick_params(axis="y", colors=(0, 0, 0, 0))
             fig.canvas.draw()
 
             # Steal the image buffer
@@ -404,12 +429,13 @@ class Visualisation(object):
         fig, ax = plt.subplots(figsize=(8, 8), dpi=dpi, frameon=False)
         plt.axis("off")
         fig.subplots_adjust(0, 0, 1, 1)
-        ax.imshow(first, aspect='auto')
+        ax.imshow(first, aspect="auto")
         extent = ax.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
 
         # And save it off
         fig.savefig(filename, dpi=dpi, bbox_inches=extent, pad_inches=0, transparent=True)
         # If we're saving a PNG, also save a lower resolution image to give options.
         if ".png" in filename:
-            fig.savefig(filename.replace(".png", "_small.png"), dpi=dpi // 2, bbox_inches=extent, pad_inches=0,
-                        transparent=True)
+            fig.savefig(
+                filename.replace(".png", "_small.png"), dpi=dpi // 2, bbox_inches=extent, pad_inches=0, transparent=True
+            )
